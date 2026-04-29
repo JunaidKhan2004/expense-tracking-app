@@ -31,7 +31,7 @@ export default function ForgotPasswordScreen() {
     if (!email.trim()) { setEmailError('Email is required'); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setEmailError('Enter a valid email'); return; }
     const ok = await forgotPassword(email.trim());
-    if (ok) setSent(true);
+    if (ok) router.replace('/(auth)/verify?type=recovery');
   };
 
   return (

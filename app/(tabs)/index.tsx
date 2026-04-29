@@ -17,6 +17,8 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { useTransactionStore } from '../../store/useTransactionStore';
 import { useWalletStore } from '../../store/useWalletStore';
+import { useBudgetStore } from '../../store/useBudgetStore';
+import { useNotificationStore } from '../../store/useNotificationStore';
 import { formatCurrency, formatCurrencyFull } from '../../utils/formatters';
 
 const { width } = Dimensions.get('window');
@@ -27,6 +29,8 @@ export default function DashboardScreen() {
   const { transactions, categories, filteredTransactions, totalIncome, totalExpenses, netBalance, hydrate } = useTransactionStore();
   const { wallets, totalBalance } = useWalletStore();
   const { settings } = useSettingsStore();
+  const { budgets, getBudgetsWithProgress, hydrate: hydrateBudgets } = useBudgetStore();
+  const { unreadCount } = useNotificationStore();
   const [refreshing, setRefreshing] = React.useState(false);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -60,7 +64,7 @@ export default function DashboardScreen() {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await hydrate();
+    await Promise.all([hydrate(), hydrateBudgets()]);
     setRefreshing(false);
   };
 
@@ -69,6 +73,8 @@ export default function DashboardScreen() {
   const expenses = totalExpenses();
   const savings = income - expenses;
   const savingsRate = income > 0 ? Math.round((savings / income) * 100) : 0;
+
+  const budgetProgress = getBudgetsWithProgress();
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
@@ -88,9 +94,16 @@ export default function DashboardScreen() {
             <Text style={[styles.userName, { color: colors.text }]}>{firstName}</Text>
           </View>
           <View style={styles.headerRight}>
-            <TouchableOpacity style={[styles.headerBtn, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <TouchableOpacity 
+              style={[styles.headerBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={() => router.push('/notifications' as any)}
+            >
               <Ionicons name="notifications-outline" size={22} color={colors.text} />
-              <View style={[styles.notifDot, { backgroundColor: colors.danger }]} />
+              {unreadCount > 0 && (
+                <View style={[styles.notifDot, { backgroundColor: colors.danger }]}>
+                  <Text style={styles.notifCount}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                </View>
+              )}
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.avatarCircle, { backgroundColor: colors.primary }]}
@@ -152,7 +165,7 @@ export default function DashboardScreen() {
             label="Transactions"
             value={String(transactions.length)}
             icon="swap-horizontal"
-            gradient={['#A855F7', '#7C6FFF']}
+            gradient={colors.gradient.primary}
             colors={colors}
             sub="This month"
           />
@@ -188,35 +201,60 @@ export default function DashboardScreen() {
           </ScrollView>
         </Animated.View>
 
-        {/* ─── Spending Summary Bar ─────────────────────────────────────────── */}
-        {income > 0 && (
-          <Animated.View style={{ opacity: fadeAnim }}>
-            <View style={[styles.spendingCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <View style={styles.spendingHeader}>
-                <Text style={[styles.spendingTitle, { color: colors.text }]}>Monthly Budget</Text>
-                <Text style={[styles.spendingPct, { color: expenses / income > 0.8 ? colors.danger : colors.success }]}>
-                  {Math.round((expenses / income) * 100)}% used
-                </Text>
-              </View>
-              <View style={[styles.progressBg, { backgroundColor: colors.border }]}>
-                <LinearGradient
-                  colors={expenses / income > 0.8 ? colors.gradient.expense : colors.gradient.income}
-                  style={[styles.progressFill, { width: `${Math.min((expenses / income) * 100, 100)}%` }]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                />
-              </View>
-              <View style={styles.spendingRow}>
-                <Text style={[styles.spendingLabel, { color: colors.textMuted }]}>
-                  Spent: {formatCurrency(expenses, settings.currency)}
-                </Text>
-                <Text style={[styles.spendingLabel, { color: colors.textMuted }]}>
-                  Remaining: {formatCurrency(Math.max(income - expenses, 0), settings.currency)}
-                </Text>
-              </View>
+        {/* ─── Budget Progress ─────────────────────────────────────────────── */}
+        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Category Budgets</Text>
+            <TouchableOpacity onPress={() => router.push('/budget/manage')}>
+              <Text style={[styles.seeAll, { color: colors.primary }]}>Set Budget</Text>
+            </TouchableOpacity>
+          </View>
+
+          {budgetProgress.length === 0 ? (
+            <View style={[styles.emptyBudget, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Text style={[styles.emptyBudgetText, { color: colors.textMuted }]}>No budgets set for this month</Text>
+              <TouchableOpacity onPress={() => router.push('/budget/manage')}>
+                <Text style={[styles.emptyBudgetAction, { color: colors.primary }]}>Set your first budget</Text>
+              </TouchableOpacity>
             </View>
-          </Animated.View>
-        )}
+          ) : (
+            <View style={styles.budgetList}>
+              {budgetProgress.map((budget) => {
+                const category = categories.find(c => c.id === budget.categoryId);
+                const isOver = budget.percentage > 100;
+                return (
+                  <View key={budget.id} style={[styles.budgetCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                    <View style={styles.budgetInfo}>
+                      <View style={[styles.budgetIcon, { backgroundColor: `${category?.color ?? colors.primary}22` }]}>
+                        <Ionicons name={category?.icon as any ?? 'grid'} size={18} color={category?.color ?? colors.primary} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.budgetName, { color: colors.text }]}>{category?.name ?? 'Category'}</Text>
+                        <Text style={[styles.budgetSpent, { color: colors.textMuted }]}>
+                          {formatCurrency(budget.spent, settings.currency)} of {formatCurrency(budget.amount, settings.currency)}
+                        </Text>
+                      </View>
+                      <Text style={[styles.budgetPct, { color: isOver ? colors.danger : colors.text }]}>
+                        {Math.round(budget.percentage)}%
+                      </Text>
+                    </View>
+                    <View style={[styles.budgetProgressBg, { backgroundColor: colors.border }]}>
+                      <View 
+                        style={[
+                          styles.budgetProgressFill, 
+                          { 
+                            width: `${Math.min(budget.percentage, 100)}%`,
+                            backgroundColor: isOver ? colors.danger : category?.color ?? colors.primary 
+                          }
+                        ]} 
+                      />
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          )}
+        </Animated.View>
 
         {/* ─── Recent Transactions ──────────────────────────────────────────── */}
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
@@ -274,7 +312,8 @@ const styles = StyleSheet.create({
   userName: { fontSize: FontSize.xl, fontWeight: '800', marginTop: 2 },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   headerBtn: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, position: 'relative' },
-  notifDot: { position: 'absolute', top: 8, right: 8, width: 8, height: 8, borderRadius: 4 },
+  notifDot: { position: 'absolute', top: -4, right: -4, minWidth: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
+  notifCount: { color: '#fff', fontSize: 10, fontWeight: '800' },
   avatarCircle: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
   avatarText: { color: '#fff', fontSize: FontSize.base, fontWeight: '800' },
   // Balance Card
@@ -298,25 +337,29 @@ const styles = StyleSheet.create({
   statLabel: { color: 'rgba(255,255,255,0.9)', fontSize: FontSize.sm, fontWeight: '600' },
   statSub: { color: 'rgba(255,255,255,0.65)', fontSize: FontSize.xs },
   // Section
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md, marginTop: Spacing.lg },
   sectionTitle: { fontSize: FontSize.lg, fontWeight: '700' },
   seeAll: { fontSize: FontSize.sm, fontWeight: '600' },
   // Wallets
-  walletsRow: { paddingBottom: Spacing.lg, gap: Spacing.md },
+  walletsRow: { paddingBottom: Spacing.md, gap: Spacing.md },
   walletCard: { width: 150, borderRadius: Radius.xl, padding: Spacing.base, gap: 4 },
   walletIcon: { width: 34, height: 34, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.25)', alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
   walletName: { color: '#fff', fontSize: FontSize.sm, fontWeight: '700' },
   walletBalance: { color: '#fff', fontSize: FontSize.lg, fontWeight: '800' },
   walletType: { color: 'rgba(255,255,255,0.65)', fontSize: FontSize.xs, fontWeight: '600', letterSpacing: 0.5 },
-  // Spending Card
-  spendingCard: { borderRadius: Radius.xl, padding: Spacing.base, borderWidth: 1, marginBottom: Spacing.xl },
-  spendingHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.md },
-  spendingTitle: { fontSize: FontSize.base, fontWeight: '700' },
-  spendingPct: { fontSize: FontSize.sm, fontWeight: '700' },
-  progressBg: { height: 8, borderRadius: 4, overflow: 'hidden', marginBottom: Spacing.sm },
-  progressFill: { height: '100%', borderRadius: 4 },
-  spendingRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  spendingLabel: { fontSize: FontSize.xs, fontWeight: '500' },
+  // Budget
+  budgetList: { gap: Spacing.md },
+  budgetCard: { borderRadius: Radius.xl, padding: Spacing.md, borderWidth: 1 },
+  budgetInfo: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, marginBottom: Spacing.sm },
+  budgetIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  budgetName: { fontSize: FontSize.base, fontWeight: '700' },
+  budgetSpent: { fontSize: FontSize.xs, marginTop: 1 },
+  budgetPct: { fontSize: FontSize.sm, fontWeight: '700' },
+  budgetProgressBg: { height: 6, borderRadius: 3, overflow: 'hidden' },
+  budgetProgressFill: { height: '100%', borderRadius: 3 },
+  emptyBudget: { padding: Spacing.xl, borderRadius: Radius.xl, borderWidth: 1, alignItems: 'center', gap: 6 },
+  emptyBudgetText: { fontSize: FontSize.sm, fontWeight: '500' },
+  emptyBudgetAction: { fontSize: FontSize.sm, fontWeight: '700' },
   // Empty state
   emptyState: { borderRadius: Radius.xl, padding: Spacing.xxl, alignItems: 'center', borderWidth: 1, gap: Spacing.sm },
   emptyText: { fontSize: FontSize.base, fontWeight: '500' },

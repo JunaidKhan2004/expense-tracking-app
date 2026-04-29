@@ -47,7 +47,7 @@ export default function SignupScreen() {
   const handleSignup = async () => {
     if (!validate()) return;
     const success = await signup(name.trim(), email.trim(), password);
-    if (success) router.replace('/(tabs)');
+    if (success) router.replace('/(auth)/verify?type=signup');
   };
 
   return (

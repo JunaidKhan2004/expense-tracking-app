@@ -11,6 +11,7 @@ const KEYS = {
   ACHIEVEMENTS: '@finvault:achievements',
   AUTH_TOKEN: '@finvault:auth_token',
   IS_ONBOARDED: '@finvault:onboarded',
+  NOTIFICATIONS: '@finvault:notifications_history',
 };
 
 async function getItem<T>(key: string): Promise<T | null> {

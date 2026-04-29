@@ -1,11 +1,10 @@
-import { Tabs, Redirect } from 'expo-router';
-import { View, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useAuthStore } from '../../store/useAuthStore';
+import { Redirect, router, Tabs } from 'expo-router';
+import { Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Colors, Shadow } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
-import { Radius, Shadow } from '../../constants/theme';
-import { router } from 'expo-router';
+import { useAuthStore } from '../../store/useAuthStore';
 
 function FloatingAddButton() {
   const { colors } = useTheme();
@@ -15,7 +14,12 @@ function FloatingAddButton() {
       style={styles.fabWrapper}
       activeOpacity={0.9}
     >
-      <LinearGradient colors={colors.gradient.primary} style={styles.fab} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+      <LinearGradient 
+        colors={colors.gradient.primary} 
+        style={[styles.fab, { shadowColor: colors.primary }]} 
+        start={{ x: 0, y: 0 }} 
+        end={{ x: 1, y: 1 }}
+      >
         <Ionicons name="add" size={28} color="#fff" />
       </LinearGradient>
     </TouchableOpacity>
@@ -116,7 +120,7 @@ const styles = StyleSheet.create({
     borderRadius: 29,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#7C6FFF',
+    // shadowColor moved to inline style for theme support
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.5,
     shadowRadius: 12,

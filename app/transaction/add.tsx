@@ -12,6 +12,7 @@ import { useWalletStore } from '../../store/useWalletStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { TransactionType } from '../../types';
 import { Spacing, FontSize, Radius } from '../../constants/theme';
+import { showToast } from '../../utils/toast';
 
 export default function AddTransactionScreen() {
   const { colors } = useTheme();
@@ -41,27 +42,42 @@ export default function AddTransactionScreen() {
   const filteredCategories = categories.filter((c) => c.type === type || c.type === 'both');
 
   const handleSave = async () => {
-    if (!amount || parseFloat(amount) <= 0) { Alert.alert('Error', 'Please enter a valid amount'); return; }
-    if (!title.trim()) { Alert.alert('Error', 'Please enter a title'); return; }
-    if (!selectedCategory) { Alert.alert('Error', 'Please select a category'); return; }
+    if (!amount || parseFloat(amount) <= 0) { 
+      showToast.error('Invalid Amount', 'Please enter a valid amount'); 
+      return; 
+    }
+    if (!title.trim()) { 
+      showToast.error('Missing Title', 'Please enter a title'); 
+      return; 
+    }
+    if (!selectedCategory) { 
+      showToast.error('No Category', 'Please select a category'); 
+      return; 
+    }
 
     setIsSaving(true);
-    const numAmount = parseFloat(amount);
+    try {
+      const numAmount = parseFloat(amount);
 
-    await addTransaction({
-      type,
-      amount: numAmount,
-      categoryId: selectedCategory,
-      walletId: selectedWallet,
-      title: title.trim(),
-      notes: notes.trim() || undefined,
-      date: new Date().toISOString(),
-      isRecurring,
-    });
+      await addTransaction({
+        type,
+        amount: numAmount,
+        categoryId: selectedCategory,
+        walletId: selectedWallet,
+        title: title.trim(),
+        notes: notes.trim() || undefined,
+        date: new Date().toISOString(),
+        isRecurring,
+      });
 
-    await adjustBalance(selectedWallet, numAmount, type);
-    setIsSaving(false);
-    router.back();
+      await adjustBalance(selectedWallet, numAmount, type);
+      showToast.success('Transaction Saved', `${type === 'income' ? 'Income' : 'Expense'} added successfully`);
+      setIsSaving(false);
+      router.back();
+    } catch (err) {
+      showToast.error('Error', 'Failed to save transaction');
+      setIsSaving(false);
+    }
   };
 
   const isIncome = type === 'income';

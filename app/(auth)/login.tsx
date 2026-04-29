@@ -1,23 +1,24 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
   Animated,
   Dimensions,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { useAuthStore } from '../../store/useAuthStore';
-import { useTheme } from '../../hooks/useTheme';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { Radius, FontSize, Spacing } from '../../constants/theme';
+import { FontSize, Radius, Spacing } from '../../constants/theme';
+import { useTheme } from '../../hooks/useTheme';
+import { useAuthStore } from '../../store/useAuthStore';
+import { showToast } from '../../utils/toast';
 
 const { width, height } = Dimensions.get('window');
 
@@ -56,7 +57,12 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     if (!validate()) return;
     const success = await login(email.trim(), password);
-    if (success) router.replace('/(tabs)');
+    if (success) {
+      showToast.success('Login Successful', `Welcome back to FinVault!`);
+      router.replace('/(tabs)');
+    } else {
+      showToast.error('Login Failed', 'Invalid email or password');
+    }
   };
 
   return (
@@ -90,7 +96,7 @@ export default function LoginScreen() {
               { backgroundColor: colors.card, borderColor: colors.border, opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
             ]}
           >
-            <Text style={[styles.title, { color: colors.text }]}>Welcome Back 👋</Text>
+            <Text style={[styles.title, { color: colors.text }]}>Welcome Back</Text>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Sign in to continue tracking your expenses</Text>
 
             <View style={styles.form}>
