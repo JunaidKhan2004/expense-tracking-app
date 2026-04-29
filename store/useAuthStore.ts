@@ -26,6 +26,7 @@ interface AuthState {
   clearError: () => void;
   hydrate: () => Promise<void>;
   setTempEmail: (email: string | null) => void;
+  purchasePremium: () => Promise<boolean>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -286,6 +287,30 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     if (!error) {
       set({ user: { ...current, ...data } });
+    }
+  },
+
+  purchasePremium: async () => {
+    const current = get().user;
+    if (!current) return false;
+
+    set({ isLoading: true });
+    // In a real app, this would integrate with RevenueCat, Stripe, or Apple/Google IAP
+    // Here we simulate a successful transaction and update Supabase
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_premium: true })
+        .eq('id', current.id);
+
+      if (error) throw error;
+
+      set({ user: { ...current, isPremium: true }, isLoading: false });
+      return true;
+    } catch (err) {
+      console.error('Premium purchase error:', err);
+      set({ isLoading: false });
+      return false;
     }
   },
 

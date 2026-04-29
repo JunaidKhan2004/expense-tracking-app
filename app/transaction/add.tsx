@@ -17,7 +17,8 @@ import { useLocalSearchParams } from 'expo-router';
 
 export default function AddTransactionScreen() {
   const { colors } = useTheme();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const params = useLocalSearchParams<{ id?: string, amount?: string, title?: string, category?: string, scanMode?: string }>();
+  const id = params.id;
   const { addTransaction, updateTransaction, transactions, categories } = useTransactionStore();
   const { wallets, adjustBalance } = useWalletStore();
   const { settings } = useSettingsStore();
@@ -53,8 +54,15 @@ export default function AddTransactionScreen() {
       setSelectedCategory(transactionToEdit.categoryId);
       setSelectedWallet(transactionToEdit.walletId);
       setIsRecurring(transactionToEdit.isRecurring);
+    } else if (params.scanMode === 'true') {
+      if (params.amount) setAmount(params.amount);
+      if (params.title) setTitle(params.title);
+      if (params.category) {
+        const cat = categories.find(c => c.id === params.category || c.name.toLowerCase() === params.category.toLowerCase());
+        if (cat) setSelectedCategory(cat.id);
+      }
     }
-  }, [isEdit, transactionToEdit]);
+  }, [isEdit, transactionToEdit, params.scanMode]);
 
   const filteredCategories = categories.filter((c) => c.type === type || c.type === 'both');
 
@@ -199,6 +207,16 @@ export default function AddTransactionScreen() {
                   maxLength={12}
                 />
               </View>
+
+              {!isEdit && (
+                <TouchableOpacity
+                  style={[styles.scanBadge, { backgroundColor: 'rgba(255,255,255,0.2)' }]}
+                  onPress={() => router.push('/transaction/scan')}
+                >
+                  <Ionicons name="scan" size={14} color="#fff" />
+                  <Text style={styles.scanBadgeText}>Scan Receipt</Text>
+                </TouchableOpacity>
+              )}
             </LinearGradient>
 
             {/* Title */}
@@ -246,8 +264,8 @@ export default function AddTransactionScreen() {
                     ]}
                   >
                     <Ionicons name={cat.icon as any} size={16} color={isSelected ? cat.color : colors.textMuted} />
-                    <Text style={[styles.catChipText, { color: isSelected ? cat.color : colors.textSecondary }]} numberOfLines={1}>
-                      {cat.name.split(' ')[0]}
+                    <Text style={[styles.catChipText, { color: isSelected ? cat.color : colors.textSecondary }]} numberOfLines={1} ellipsizeMode="tail">
+                      {cat.name}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -320,13 +338,15 @@ const styles = StyleSheet.create({
   amountLabel: { color: 'rgba(255,255,255,0.75)', fontSize: FontSize.sm, fontWeight: '600', marginBottom: Spacing.sm },
   amountRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   currencySymbol: { color: '#fff', fontSize: 32, fontWeight: '800', opacity: 0.9 },
-  amountInput: { color: '#fff', fontSize: 48, fontWeight: '900', minWidth: 120, maxWidth: 220 },
+  amountInput: { color: '#fff', fontSize: 48, fontWeight: '900', minWidth: 120, maxWidth: 220, textAlign: 'center' },
+  scanBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: Radius.full, marginTop: Spacing.md },
+  scanBadgeText: { color: '#fff', fontSize: 12, fontWeight: '700' },
   field: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, borderRadius: Radius.lg, borderWidth: 1, paddingHorizontal: Spacing.md, paddingVertical: Spacing.md, marginBottom: Spacing.md },
   fieldInput: { flex: 1, fontSize: FontSize.base },
   sectionLabel: { fontSize: FontSize.sm, fontWeight: '700', letterSpacing: 0.3, marginBottom: Spacing.sm, marginTop: 4 },
   catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.lg },
-  catChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: Radius.full, borderWidth: 1.5, maxWidth: 110 },
-  catChipText: { fontSize: FontSize.xs, fontWeight: '600' },
+  catChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: Radius.full, borderWidth: 1.5 },
+  catChipText: { fontSize: FontSize.xs, fontWeight: '600', flexShrink: 1 },
   walletRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.lg },
   walletChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm + 2, borderRadius: Radius.full, borderWidth: 1.5 },
   walletChipText: { fontSize: FontSize.sm, fontWeight: '600' },

@@ -1,15 +1,15 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../../hooks/useTheme';
-import { useTransactionStore } from '../../store/useTransactionStore';
-import { useSettingsStore } from '../../store/useSettingsStore';
+import { LinearGradient } from 'expo-linear-gradient';
+import React, { useState } from 'react';
+import { Dimensions, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Svg, { G, Rect, Text as SvgText } from 'react-native-svg';
 import { FilterPills } from '../../components/ui/Badge';
-import { formatCurrency, getCategoryStats, getMonthlyStats, filterTransactionsByPeriod } from '../../utils/formatters';
-import { Spacing, FontSize, Radius } from '../../constants/theme';
+import { FontSize, Radius, Spacing } from '../../constants/theme';
+import { useTheme } from '../../hooks/useTheme';
+import { useSettingsStore } from '../../store/useSettingsStore';
+import { useTransactionStore } from '../../store/useTransactionStore';
 import { FilterPeriod } from '../../types';
-import Svg, { Circle, G, Text as SvgText, Rect } from 'react-native-svg';
+import { filterTransactionsByPeriod, formatCurrency, getCategoryStats, getMonthlyStats } from '../../utils/formatters';
 
 const { width } = Dimensions.get('window');
 const CHART_W = width - Spacing.base * 2;
@@ -235,10 +235,10 @@ export default function AnalyticsScreen() {
           </View>
           <Text style={styles.aiText}>
             {expenses > income
-              ? `⚠️ You've overspent by ${formatCurrency(expenses - income, settings.currency)} this period. Consider reducing discretionary spending.`
+              ? `You've overspent by ${formatCurrency(expenses - income, settings.currency)} this period. Consider reducing discretionary spending.`
               : savings > 0
-              ? `✅ Great job! You've saved ${formatCurrency(savings, settings.currency)} (${Math.round((savings / income) * 100)}% of income). Keep it up!`
-              : '📊 Add more transactions to get personalized spending insights.'}
+                ? `Great job! You've saved ${formatCurrency(savings, settings.currency)} (${Math.round((savings / income) * 100)}% of income). Keep it up!`
+                : 'Add more transactions to get personalized spending insights.'}
           </Text>
         </LinearGradient>
 

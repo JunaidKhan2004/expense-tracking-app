@@ -114,6 +114,12 @@ export const useWalletStore = create<WalletState>((set, get) => ({
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    // Premium Check: Limit free users to 1 wallet
+    const { user: authUser } = (await import('./useAuthStore')).useAuthStore.getState();
+    if (authUser && !authUser.isPremium && get().wallets.length >= 1) {
+      throw new Error('LIMIT_REACHED');
+    }
+
     const dbData = {
       ...mapWalletToDB(data),
       user_id: user.id,

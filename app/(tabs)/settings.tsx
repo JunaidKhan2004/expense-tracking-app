@@ -5,14 +5,14 @@ import React from 'react';
 import {
   Alert,
   Animated,
-  Dimensions,
   ScrollView,
   StyleSheet,
   Switch,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { handleUnderDevelopment } from '../../components/ui/FeatureWrapper';
 import { CURRENCIES } from '../../constants/categories';
 import { FontSize, Radius, Shadow, Spacing } from '../../constants/theme';
@@ -71,11 +71,11 @@ function PremiumBanner({ colors }: any) {
   });
 
   return (
-    <TouchableOpacity activeOpacity={0.9} onPress={() => handleUnderDevelopment('Premium Upgrade')}>
-      <LinearGradient 
-        colors={[colors.primary, colors.primaryDark]} 
-        style={styles.premiumCard} 
-        start={{ x: 0, y: 0 }} 
+    <TouchableOpacity activeOpacity={0.9} onPress={() => router.push('/premium')}>
+      <LinearGradient
+        colors={[colors.primary, colors.primaryDark]}
+        style={styles.premiumCard}
+        start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
         {/* Animated Decor Circles */}
@@ -85,7 +85,7 @@ function PremiumBanner({ colors }: any) {
         <Animated.View style={[styles.avatar, { backgroundColor: 'rgba(255,255,255,0.2)', width: 48, height: 48, transform: [{ scale: pulseAnim }] }]}>
           <Ionicons name="star" size={24} color="#FFB830" />
         </Animated.View>
-        
+
         <View style={{ flex: 1 }}>
           <Text style={styles.premiumCardTitle}>Upgrade to Premium</Text>
           <Text style={styles.premiumCardSub}>Unlock cloud backup, unlimited wallets & AI spending insights</Text>
@@ -104,11 +104,12 @@ function SectionHeader({ title, colors }: any) {
 }
 
 export default function SettingsScreen() {
+  const insets = useSafeAreaInsets();
   const { colors, isDark } = useTheme();
   const { user, logout } = useAuthStore();
   const { settings, setTheme, setCurrency, toggleNotifications, toggleBiometric, updateSettings } = useSettingsStore();
-  const { transactions } = useTransactionStore();
-  const { totalBalance } = useWalletStore();
+  const { categories, transactions } = useTransactionStore();
+  const { wallets, totalBalance } = useWalletStore();
 
   const handleLogout = () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
@@ -139,6 +140,10 @@ export default function SettingsScreen() {
   };
 
   const handleExportPDF = async () => {
+    if (!user?.isPremium) {
+      router.push('/premium');
+      return;
+    }
     try {
       showToast.info('Preparing PDF', 'Generating your report...');
       await exportTransactionsToPDF(
@@ -165,28 +170,65 @@ export default function SettingsScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + Spacing.sm }]}
+      >
         {/* Header */}
         <Text style={[styles.title, { color: colors.text }]}>Settings</Text>
 
         {/* Profile Card */}
-        <LinearGradient colors={colors.gradient.primary} style={styles.profileCard} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{firstName.charAt(0).toUpperCase()}</Text>
+        <LinearGradient
+          colors={colors.gradient.primary}
+          style={styles.profileCard}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        >
+          {/* Decorative Circles */}
+          <View style={[styles.decorCircle, { top: -20, right: -20, width: 100, height: 100 }]} />
+          <View style={[styles.decorCircle, { bottom: -30, left: -10, width: 80, height: 80, opacity: 0.1 }]} />
+
+          <View style={styles.profileTop}>
+            <View style={[styles.avatar, { borderColor: 'rgba(255,255,255,0.3)', borderWidth: 4 }]}>
+              <Text style={styles.avatarText}>{firstName.charAt(0).toUpperCase()}</Text>
+              {user?.isPremium && (
+                <View style={styles.crownBadge}>
+                  <Ionicons name="ribbon" size={12} color="#fff" />
+                </View>
+              )}
+            </View>
+            <View style={styles.profileInfo}>
+              <Text style={styles.profileName}>{user?.name ?? 'User'}</Text>
+              <Text style={styles.profileEmail}>{user?.email ?? ''}</Text>
+              {user?.isPremium ? (
+                <View style={styles.premiumBadge}>
+                  <Ionicons name="star" size={10} color="#FFB830" />
+                  <Text style={styles.premiumText}>PREMIUM MEMBER</Text>
+                </View>
+              ) : (
+                <TouchableOpacity onPress={() => router.push('/premium')} style={styles.freeBadge}>
+                  <Text style={styles.freeText}>GO PREMIUM</Text>
+                  <Ionicons name="chevron-forward" size={10} color="rgba(255,255,255,0.8)" />
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
-          <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>{user?.name ?? 'User'}</Text>
-            <Text style={styles.profileEmail}>{user?.email ?? ''}</Text>
-            {user?.isPremium ? (
-              <View style={styles.premiumBadge}>
-                <Ionicons name="star" size={12} color="#FFB830" />
-                <Text style={styles.premiumText}>Premium</Text>
-              </View>
-            ) : (
-              <View style={styles.freeBadge}>
-                <Text style={styles.freeText}>Free Plan</Text>
-              </View>
-            )}
+
+          <View style={[styles.profileStats, { borderTopColor: 'rgba(255,255,255,0.15)' }]}>
+            <View style={styles.statItem}>
+              <Text style={styles.statLabel}>Transactions</Text>
+              <Text style={styles.statValue}>{transactions.length}</Text>
+            </View>
+            <View style={[styles.statDivider, { backgroundColor: 'rgba(255,255,255,0.2)' }]} />
+            <View style={styles.statItem}>
+              <Text style={styles.statLabel}>Wallets</Text>
+              <Text style={styles.statValue}>{wallets.length}</Text>
+            </View>
+            <View style={[styles.statDivider, { backgroundColor: 'rgba(255,255,255,0.2)' }]} />
+            <View style={styles.statItem}>
+              <Text style={styles.statLabel}>Currency</Text>
+              <Text style={styles.statValue}>{settings.currency}</Text>
+            </View>
           </View>
         </LinearGradient>
 
@@ -215,6 +257,34 @@ export default function SettingsScreen() {
             onPress={handleCurrencySelect}
             colors={colors}
             color="#FFB830"
+          />
+        </View>
+
+        {/* Management */}
+        <SectionHeader title="MANAGEMENT" colors={colors} />
+        <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <SettingRow
+            icon="grid"
+            label="Manage Categories"
+            value={`${categories.length} Total`}
+            onPress={() => router.push('/category/manage')}
+            colors={colors}
+            color="#A855F7"
+          />
+          <SettingRow
+            icon="wallet"
+            label="Manage Wallets"
+            value={`${wallets.length} Active`}
+            onPress={() => router.push('/wallet/manage')}
+            colors={colors}
+            color={colors.primary}
+          />
+          <SettingRow
+            icon="pie-chart"
+            label="Manage Budgets"
+            onPress={() => router.push('/budget/manage')}
+            colors={colors}
+            color={colors.success}
           />
         </View>
 
@@ -327,14 +397,14 @@ export default function SettingsScreen() {
           <SettingRow
             icon="help-circle"
             label="Support & Feedback"
-            onPress={() => handleUnderDevelopment('Support & Feedback')}
+            onPress={() => router.push('/settings/support')}
             colors={colors}
             color={colors.info}
           />
           <SettingRow
             icon="document-text"
             label="Terms of Service"
-            onPress={() => handleUnderDevelopment('Terms of Service')}
+            onPress={() => router.push('/settings/terms')}
             colors={colors}
             color={colors.textSecondary}
           />
@@ -388,19 +458,27 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, paddingTop: 54 },
+  root: { flex: 1 },
   scroll: { paddingHorizontal: Spacing.base },
   title: { fontSize: FontSize.xxl, fontWeight: '800', marginBottom: Spacing.xl },
-  profileCard: { borderRadius: Radius.xxl, padding: Spacing.xl, flexDirection: 'row', alignItems: 'center', gap: Spacing.base, marginBottom: Spacing.xl },
-  avatar: { width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(255,255,255,0.25)', alignItems: 'center', justifyContent: 'center' },
-  avatarText: { color: '#fff', fontSize: FontSize.xxl, fontWeight: '800' },
+  profileCard: { borderRadius: Radius.xxl, padding: Spacing.xl, marginBottom: Spacing.xl, overflow: 'hidden', ...Shadow.primary },
+  decorCircle: { position: 'absolute', backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 100 },
+  profileTop: { flexDirection: 'row', alignItems: 'center', gap: Spacing.base, marginBottom: Spacing.lg },
+  avatar: { width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center', position: 'relative' },
+  avatarText: { color: '#fff', fontSize: 24, fontWeight: '800' },
+  crownBadge: { position: 'absolute', bottom: -2, right: -2, backgroundColor: '#FFB830', width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#E2E8F0' },
   profileInfo: { flex: 1 },
-  profileName: { color: '#fff', fontSize: FontSize.lg, fontWeight: '800' },
-  profileEmail: { color: 'rgba(255,255,255,0.75)', fontSize: FontSize.sm, marginTop: 2 },
-  premiumBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6, backgroundColor: 'rgba(255,255,255,0.2)', alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
-  premiumText: { color: '#FFB830', fontSize: FontSize.xs, fontWeight: '700' },
-  freeBadge: { marginTop: 6, backgroundColor: 'rgba(255,255,255,0.15)', alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
-  freeText: { color: 'rgba(255,255,255,0.8)', fontSize: FontSize.xs, fontWeight: '600' },
+  profileName: { color: '#fff', fontSize: 20, fontWeight: '800', letterSpacing: 0.5 },
+  profileEmail: { color: 'rgba(255,255,255,0.7)', fontSize: 13, marginTop: 2 },
+  premiumBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8, backgroundColor: 'rgba(255,255,255,0.2)', alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: Radius.full },
+  premiumText: { color: '#FFB830', fontSize: 10, fontWeight: '900', letterSpacing: 1 },
+  freeBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8, backgroundColor: 'rgba(0,0,0,0.2)', alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: Radius.full },
+  freeText: { color: 'rgba(255,255,255,0.9)', fontSize: 10, fontWeight: '800', letterSpacing: 1 },
+  profileStats: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: Spacing.md, borderTopWidth: 1 },
+  statItem: { flex: 1, alignItems: 'center' },
+  statLabel: { color: 'rgba(255,255,255,0.6)', fontSize: 10, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
+  statValue: { color: '#fff', fontSize: FontSize.base, fontWeight: '800', marginTop: 2 },
+  statDivider: { width: 1, height: 20 },
   sectionTitle: { fontSize: FontSize.xs, fontWeight: '700', letterSpacing: 1, marginBottom: Spacing.sm, marginTop: Spacing.lg, paddingLeft: 4 },
   section: { borderRadius: Radius.xl, borderWidth: 1, overflow: 'hidden', marginBottom: Spacing.sm },
   row: { flexDirection: 'row', alignItems: 'center', padding: Spacing.base, gap: Spacing.md, borderBottomWidth: 1 },
@@ -408,12 +486,12 @@ const styles = StyleSheet.create({
   rowContent: { flex: 1 },
   rowLabel: { fontSize: FontSize.base, fontWeight: '600' },
   rowValue: { fontSize: FontSize.xs, fontWeight: '500', marginTop: 1 },
-  premiumCard: { 
-    borderRadius: Radius.xxl, 
-    padding: Spacing.xl, 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    gap: Spacing.md, 
+  premiumCard: {
+    borderRadius: Radius.xxl,
+    padding: Spacing.xl,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
     marginVertical: Spacing.md,
     overflow: 'hidden',
     position: 'relative',

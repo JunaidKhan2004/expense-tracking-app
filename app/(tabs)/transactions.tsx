@@ -1,17 +1,21 @@
-import React, { useState, useMemo } from 'react';
-import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput,
-} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useTheme } from '../../hooks/useTheme';
-import { useTransactionStore } from '../../store/useTransactionStore';
-import { useSettingsStore } from '../../store/useSettingsStore';
+import React, { useMemo, useState } from 'react';
+import {
+  FlatList,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { TransactionItem } from '../../components/transaction/TransactionItem';
 import { FilterPills } from '../../components/ui/Badge';
-import { formatDate } from '../../utils/formatters';
-import { Spacing, FontSize, Radius } from '../../constants/theme';
+import { FontSize, Radius, Spacing } from '../../constants/theme';
+import { useTheme } from '../../hooks/useTheme';
+import { useTransactionStore } from '../../store/useTransactionStore';
 import { FilterPeriod } from '../../types';
+import { formatDate } from '../../utils/formatters';
 
 const PERIOD_OPTIONS = [
   { label: 'All', value: 'all' },

@@ -1,22 +1,22 @@
 import { Stack } from 'expo-router';
-import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
 import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';
-import { View, Text } from 'react-native';
+import { AuthGuard } from '../components/auth/AuthGuard';
+import { OfflineBanner } from '../components/ui/OfflineBanner';
+import { Radius, Shadow } from '../constants/theme';
+import '../global.css';
+import { useTheme } from '../hooks/useTheme';
 import { useAuthStore } from '../store/useAuthStore';
-import { useTransactionStore } from '../store/useTransactionStore';
-import { useWalletStore } from '../store/useWalletStore';
-import { useSettingsStore } from '../store/useSettingsStore';
 import { useBudgetStore } from '../store/useBudgetStore';
 import { useNotificationStore } from '../store/useNotificationStore';
-import { useTheme } from '../hooks/useTheme';
-import { Radius, Shadow } from '../constants/theme';
-import { AuthGuard } from '../components/auth/AuthGuard';
+import { useSettingsStore } from '../store/useSettingsStore';
+import { useTransactionStore } from '../store/useTransactionStore';
+import { useWalletStore } from '../store/useWalletStore';
 import { registerForPushNotificationsAsync } from '../utils/notifications';
-import { OfflineBanner } from '../components/ui/OfflineBanner';
-import '../global.css';
 
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 export default function RootLayout() {
   const { hydrate: hydrateAuth } = useAuthStore();
@@ -73,45 +73,71 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <AuthGuard>
-        <StatusBar style={isDark ? 'light' : 'dark'} />
-        <OfflineBanner />
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: colors.background },
-            animation: 'slide_from_right',
-          }}
-        >
-          <Stack.Screen name="(auth)" />
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen
-            name="transaction/add"
-            options={{ animation: 'slide_from_bottom', presentation: 'modal' }}
-          />
-          <Stack.Screen
-            name="transaction/[id]"
-            options={{ animation: 'slide_from_bottom', presentation: 'modal' }}
-          />
-          <Stack.Screen
-            name="budget/manage"
-            options={{ animation: 'slide_from_right' }}
-          />
-          <Stack.Screen
-            name="settings/security/pin"
-            options={{ animation: 'slide_from_right' }}
-          />
-          <Stack.Screen
-            name="settings/privacy"
-            options={{ animation: 'slide_from_right' }}
-          />
-          <Stack.Screen
-            name="notifications"
-            options={{ animation: 'slide_from_bottom', presentation: 'modal' }}
-          />
-        </Stack>
-        <Toast config={toastConfig} />
-      </AuthGuard>
+      <SafeAreaProvider>
+        <AuthGuard>
+          <StatusBar style={isDark ? 'light' : 'dark'} />
+          <OfflineBanner />
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: colors.background },
+              animation: 'slide_from_right',
+            }}
+          >
+            <Stack.Screen name="(auth)" />
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen
+              name="transaction/add"
+              options={{ animation: 'slide_from_bottom', presentation: 'modal' }}
+            />
+            <Stack.Screen
+              name="transaction/scan"
+              options={{ animation: 'slide_from_bottom', presentation: 'modal' }}
+            />
+            <Stack.Screen
+              name="transaction/[id]"
+              options={{ animation: 'slide_from_bottom', presentation: 'modal' }}
+            />
+            <Stack.Screen
+              name="category/manage"
+              options={{ animation: 'slide_from_right', headerTitle: 'Manage Categories' }}
+            />
+            <Stack.Screen
+              name="budget/manage"
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
+              name="wallet/manage"
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
+              name="settings/security/pin"
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
+              name="settings/privacy"
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
+              name="settings/support"
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
+              name="settings/terms"
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
+              name="premium"
+              options={{ animation: 'slide_from_bottom', presentation: 'modal', headerShown: false }}
+            />
+            <Stack.Screen
+              name="notifications"
+              options={{ animation: 'slide_from_bottom', presentation: 'modal', headerShown: false }}
+            />
+          </Stack>
+          <Toast config={toastConfig} />
+        </AuthGuard>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }

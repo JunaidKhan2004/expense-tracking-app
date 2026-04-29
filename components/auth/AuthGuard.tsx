@@ -1,23 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, AppState, AppStateStatus, Animated } from 'react-native';
-import * as LocalAuthentication from 'expo-local-authentication';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useSettingsStore } from '../../store/useSettingsStore';
-import { useTheme } from '../../hooks/useTheme';
+import * as LocalAuthentication from 'expo-local-authentication';
+import React, { useEffect, useState } from 'react';
+import { Animated, AppState, AppStateStatus, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { FontSize, Radius, Spacing } from '../../constants/theme';
+import { useTheme } from '../../hooks/useTheme';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useSettingsStore } from '../../store/useSettingsStore';
 import { showToast } from '../../utils/toast';
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { settings } = useSettingsStore();
   const { user } = useAuthStore();
   const { colors } = useTheme();
-  
+
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showPinFallback, setShowPinFallback] = useState(false);
   const [pinInput, setPinInput] = useState('');
-  
+
   const shakeAnim = React.useRef(new Animated.Value(0)).current;
 
   const shouldLock = (settings.biometricEnabled || settings.pinEnabled) && user;
@@ -103,7 +103,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
               Authentication required to access your data
             </Text>
-            
+
             <TouchableOpacity style={styles.unlockBtn} onPress={authenticate}>
               <LinearGradient colors={colors.gradient.primary} style={styles.btnGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
                 <Ionicons name="finger-print" size={20} color="#fff" />
@@ -126,7 +126,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
                   key={i}
                   style={[
                     styles.dot,
-                    { 
+                    {
                       backgroundColor: pinInput.length >= i ? colors.primary : colors.border,
                       borderColor: pinInput.length >= i ? colors.primary : colors.border,
                     }

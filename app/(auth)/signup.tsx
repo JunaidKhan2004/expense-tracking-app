@@ -1,16 +1,21 @@
-import React, { useState, useRef, useEffect } from 'react';
-import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  KeyboardAvoidingView, Platform, Animated,
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useAuthStore } from '../../store/useAuthStore';
-import { useTheme } from '../../hooks/useTheme';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  Animated,
+  KeyboardAvoidingView, Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { Radius, FontSize, Spacing } from '../../constants/theme';
+import { FontSize, Radius, Spacing } from '../../constants/theme';
+import { useTheme } from '../../hooks/useTheme';
+import { useAuthStore } from '../../store/useAuthStore';
 
 export default function SignupScreen() {
   const { colors } = useTheme();

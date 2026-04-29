@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import React, { useEffect, useRef, useMemo } from 'react';
+import { BlurView } from 'expo-blur';
+import React, { useEffect, useMemo, useRef } from 'react';
 import {
   Animated, Dimensions, RefreshControl,
   ScrollView,
@@ -10,18 +11,19 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TransactionItem } from '../../components/transaction/TransactionItem';
+import { handleUnderDevelopment } from '../../components/ui/FeatureWrapper';
 import { FontSize, Radius, Shadow, Spacing } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useBudgetStore } from '../../store/useBudgetStore';
+import { useNotificationStore } from '../../store/useNotificationStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { useTransactionStore } from '../../store/useTransactionStore';
 import { useWalletStore } from '../../store/useWalletStore';
-import { useBudgetStore } from '../../store/useBudgetStore';
-import { useNotificationStore } from '../../store/useNotificationStore';
-import { formatCurrency, formatCurrencyFull } from '../../utils/formatters';
 import { generateAIInsights } from '../../utils/ai';
-import { handleUnderDevelopment } from '../../components/ui/FeatureWrapper';
+import { formatCurrency, formatCurrencyFull } from '../../utils/formatters';
 
 const { width } = Dimensions.get('window');
 
@@ -85,11 +87,13 @@ export default function DashboardScreen() {
   const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
   const firstName = user?.name?.split(' ')[0] ?? 'there';
 
+  const insets = useSafeAreaInsets();
+
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scroll}
+        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + Spacing.sm }]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
         {/* ─── Header ──────────────────────────────────────────────────────── */}
@@ -99,7 +103,7 @@ export default function DashboardScreen() {
             <Text style={[styles.userName, { color: colors.text }]}>{firstName}</Text>
           </View>
           <View style={styles.headerRight}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.headerBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
               onPress={() => router.push('/notifications' as any)}
             >
@@ -178,9 +182,9 @@ export default function DashboardScreen() {
 
         {/* ─── AI Smart Advisor ────────────────────────────────────────────── */}
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-          <AIAdvisorSection 
-            insights={generateAIInsights(transactions, categories, colors)} 
-            colors={colors} 
+          <AIAdvisorSection
+            insights={generateAIInsights(transactions, categories, colors)}
+            colors={colors}
           />
         </Animated.View>
 
@@ -188,7 +192,7 @@ export default function DashboardScreen() {
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>My Wallets</Text>
-            <TouchableOpacity onPress={() => router.push('/(tabs)/settings')}>
+            <TouchableOpacity onPress={() => router.push('/wallet/manage')}>
               <Text style={[styles.seeAll, { color: colors.primary }]}>Manage</Text>
             </TouchableOpacity>
           </View>
@@ -252,21 +256,21 @@ export default function DashboardScreen() {
                       </Text>
                     </View>
                     <View style={[styles.budgetProgressBg, { backgroundColor: colors.border }]}>
-                      <View 
+                      <View
                         style={[
-                          styles.budgetProgressFill, 
-                          { 
+                          styles.budgetProgressFill,
+                          {
                             width: `${Math.min(budget.percentage, 100)}%`,
-                            backgroundColor: isOver ? colors.danger : category?.color ?? colors.primary 
+                            backgroundColor: isOver ? colors.danger : category?.color ?? colors.primary
                           }
-                        ]} 
+                        ]}
                       />
                     </View>
                   </View>
                 );
               })}
               {budgetProgress.length > 4 && (
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[styles.seeMoreBtn, { borderColor: colors.border }]}
                   onPress={() => router.push('/budget/manage')}
                 >
@@ -307,7 +311,7 @@ export default function DashboardScreen() {
             ))
           )}
           {filteredTransactions().length > 5 && (
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.seeMoreBtn, { borderColor: colors.border, marginTop: Spacing.md }]}
               onPress={() => router.push('/(tabs)/transactions')}
             >
@@ -326,13 +330,26 @@ export default function DashboardScreen() {
 
 function AIAdvisorSection({ insights, colors }: any) {
   const [isExpanded, setIsExpanded] = React.useState(false);
+  const { user } = useAuthStore();
   const mainInsight = insights[0];
 
   return (
     <View style={[styles.aiContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <TouchableOpacity 
-        style={styles.aiHeader} 
-        onPress={() => setIsExpanded(!isExpanded)}
+      {!user?.isPremium && (
+        <View style={styles.aiLockOverlay}>
+          <BlurView intensity={20} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
+          <TouchableOpacity
+            style={[styles.aiLockBtn, { backgroundColor: colors.primary }]}
+            onPress={() => router.push('/premium')}
+          >
+            <Ionicons name="lock-closed" size={14} color="#fff" />
+            <Text style={styles.aiLockText}>Unlock with Premium</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+      <TouchableOpacity
+        style={[styles.aiHeader, !user?.isPremium && { opacity: 0.3 }]}
+        onPress={() => user?.isPremium ? setIsExpanded(!isExpanded) : router.push('/premium')}
         activeOpacity={0.7}
       >
         <View style={[styles.aiIconBox, { backgroundColor: `${mainInsight.color}22` }]}>
@@ -342,13 +359,17 @@ function AIAdvisorSection({ insights, colors }: any) {
           <Text style={[styles.aiLabel, { color: colors.textMuted }]}>AI SMART ADVISOR</Text>
           <Text style={[styles.aiMainTitle, { color: colors.text }]}>{mainInsight.title}</Text>
         </View>
-        <Ionicons 
-          name={isExpanded ? "chevron-up" : "chevron-down"} 
-          size={18} 
-          color={colors.textMuted} 
-        />
+        {user?.isPremium ? (
+          <Ionicons
+            name={isExpanded ? "chevron-up" : "chevron-down"}
+            size={18}
+            color={colors.textMuted}
+          />
+        ) : (
+          <Ionicons name="lock-closed" size={16} color={colors.textMuted} />
+        )}
       </TouchableOpacity>
-      
+
       <Text style={[styles.aiMainDesc, { color: colors.textSecondary }]}>
         {mainInsight.description}
       </Text>
@@ -364,12 +385,14 @@ function AIAdvisorSection({ insights, colors }: any) {
               </View>
             </View>
           ))}
-          <TouchableOpacity 
-            style={[styles.aiProBtn, { backgroundColor: colors.primaryGlow }]}
-            onPress={() => handleUnderDevelopment('Advanced AI Advisor')}
-          >
-            <Text style={[styles.aiProBtnText, { color: colors.primary }]}>Unlock Full AI Analysis</Text>
-          </TouchableOpacity>
+          {!user?.isPremium && (
+            <TouchableOpacity
+              style={[styles.aiProBtn, { backgroundColor: colors.primaryGlow }]}
+              onPress={() => router.push('/premium')}
+            >
+              <Text style={[styles.aiProBtnText, { color: colors.primary }]}>Unlock Full AI Analysis</Text>
+            </TouchableOpacity>
+          )}
         </View>
       )}
     </View>
@@ -391,7 +414,7 @@ function StatCard({ label, value, icon, gradient, colors, sub }: any) {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  scroll: { paddingTop: 54, paddingHorizontal: Spacing.base },
+  scroll: { paddingHorizontal: Spacing.base },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.xl },
   greeting: { fontSize: FontSize.sm, fontWeight: '500' },
   userName: { fontSize: FontSize.xl, fontWeight: '800', marginTop: 2 },
@@ -455,7 +478,29 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     borderWidth: 1,
     marginBottom: Spacing.xl,
+    position: 'relative',
+    overflow: 'hidden',
     ...Shadow.sm,
+  },
+  aiLockOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  aiLockBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: Radius.full,
+    ...Shadow.sm,
+  },
+  aiLockText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
   },
   aiHeader: {
     flexDirection: 'row',

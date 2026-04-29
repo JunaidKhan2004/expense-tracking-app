@@ -1,15 +1,21 @@
-import React, { useState } from 'react';
-import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  TextInput, KeyboardAvoidingView, Platform, Alert, Dimensions,
-} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import React, { useState } from 'react';
+import {
+  Dimensions,
+  KeyboardAvoidingView, Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
+import { FontSize, Radius, Spacing } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
-import { useTransactionStore } from '../../store/useTransactionStore';
 import { useBudgetStore } from '../../store/useBudgetStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
-import { Spacing, FontSize, Radius } from '../../constants/theme';
+import { useTransactionStore } from '../../store/useTransactionStore';
 import { formatCurrency } from '../../utils/formatters';
 import { showToast } from '../../utils/toast';
 
@@ -18,13 +24,27 @@ const { width } = Dimensions.get('window');
 export default function ManageBudgetsScreen() {
   const { colors } = useTheme();
   const { categories } = useTransactionStore();
-  const { budgets, setBudget } = useBudgetStore();
+  const { budgets, setBudget, deleteBudget } = useBudgetStore();
   const { settings } = useSettingsStore();
 
   const [selectedCat, setSelectedCat] = useState<string | null>(null);
   const [amount, setAmount] = useState('');
 
   const expenseCategories = categories.filter(c => c.type === 'expense' || c.type === 'both');
+
+  const handleDeleteBudget = async () => {
+    const budget = budgets.find(b => b.categoryId === selectedCat);
+    if (!budget) return;
+
+    try {
+      await deleteBudget(budget.id);
+      showToast.success('Budget Removed', 'Category limit has been deleted');
+      setSelectedCat(null);
+      setAmount('');
+    } catch (err) {
+      showToast.error('Error', 'Failed to delete budget');
+    }
+  };
 
   const handleSetBudget = async () => {
     if (!selectedCat || !amount || parseFloat(amount) <= 0) {
@@ -51,14 +71,14 @@ export default function ManageBudgetsScreen() {
         <Text style={[styles.title, { color: colors.text }]}>Manage Budgets</Text>
       </View>
 
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
         <View style={{ flex: 1 }}>
-          <ScrollView 
-            contentContainerStyle={styles.scroll} 
+          <ScrollView
+            contentContainerStyle={styles.scroll}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
@@ -77,8 +97,8 @@ export default function ManageBudgetsScreen() {
                     }}
                     style={[
                       styles.catCard,
-                      { 
-                        backgroundColor: colors.card, 
+                      {
+                        backgroundColor: colors.card,
                         borderColor: isSelected ? colors.primary : colors.border,
                         borderWidth: isSelected ? 2 : 1
                       }
@@ -115,6 +135,11 @@ export default function ManageBudgetsScreen() {
                   />
                 </View>
                 <View style={styles.actionBtns}>
+                  {budgets.some(b => b.categoryId === selectedCat) && (
+                    <TouchableOpacity onPress={handleDeleteBudget} style={styles.deleteBtn}>
+                      <Ionicons name="trash-outline" size={24} color={colors.danger} />
+                    </TouchableOpacity>
+                  )}
                   <TouchableOpacity onPress={() => setSelectedCat(null)} style={styles.closeBtn}>
                     <Ionicons name="close-circle-outline" size={32} color={colors.textMuted} />
                   </TouchableOpacity>
@@ -148,7 +173,8 @@ const styles = StyleSheet.create({
   inputWrapper: { flex: 1 },
   inputLabel: { fontSize: FontSize.xs, fontWeight: '600', marginBottom: 4 },
   input: { fontSize: FontSize.xl, fontWeight: '800' },
-  actionBtns: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  actionBtns: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  deleteBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FF444415' },
   closeBtn: { padding: 4 },
   saveBtn: { padding: 0 },
 });
