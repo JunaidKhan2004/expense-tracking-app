@@ -6,17 +6,16 @@ FinVault is a modern, premium Expense Tracking application built with **React Na
 
 ## ✨ Key Features
 
-- **AI Smart Advisor (New!):** Dashboard-integrated intelligence that analyzes your spending patterns (Spikes, Dining Alerts, Subscriptions) and provides actionable financial advice.
+- **AI Smart Advisor:** Dashboard-integrated intelligence that analyzes your spending patterns (Spikes, Dining Alerts, Subscriptions) and provides actionable financial advice.
+- **OCR Receipt Scanner (New!):** Premium camera-driven scanner that automatically detects amount, title, and category from your receipts using AI simulation (ready for API integration).
+- **Custom Category Management (New!):** Create, customize (icon/color), and manage your own expense and income categories beyond the defaults.
 - **Interactive Swipe Actions:** Effortlessly manage your finances with left-to-right swipe for **Editing** and right-to-left swipe for **Deletion** directly from any transaction list.
 - **Real-time Financial Sync:** Automatic wallet balance adjustments when adding, editing, or deleting transactions. Your net balance and category budgets stay perfectly in sync.
-- **Supabase Cloud Integration:** Secure authentication (Email OTP & Google Sign-In) and real-time data synchronization across all your devices.
 - **Advanced Budgeting Engine:** Set category-wise monthly spending limits with real-time progress tracking and visual color alerts (Healthy vs. Over-budget) on the dashboard.
-- **Emerald Design System:** A sophisticated Emerald/Seafoam color palette for a premium, calm, and professional experience.
+- **Premium UI/UX:** A clean, professional interface featuring glassmorphism, linear gradients, dynamic profile stats, and smooth `Animated` transitions.
 - **Security & Privacy:** Dual-layer security with **Biometric Lock (FaceID/Fingerprint)** and **4-digit PIN fallback**.
-- **Offline Handling:** Intelligent connectivity monitoring with an **Animated Offline Banner**. Data stays persistent even without internet.
 - **Data Export (Pro):** Generate professional **PDF Reports** with branding, or export raw data to **CSV** for detailed analysis.
 - **Smart Notifications Center:** Local and push notification system with budget threshold alerts (80%/100%) and a dedicated notification history view.
-- **Professional UI/UX:** A clean, emoji-free interface featuring glassmorphism, linear gradients, and smooth `Animated` transitions.
 
 ---
 
@@ -89,8 +88,9 @@ Make sure you have Node.js installed. You will also need the **Expo Go** app on 
 - [x] Real-time Balance Adjustment
 - [x] PDF/CSV Reports
 - [x] Google OAuth Integration
-- [ ] Receipt Scanning (OCR) - *Coming Soon*
+- [x] Receipt Scanning (OCR)
 - [ ] Advanced AI Spending Forecast - *Under Development*
+- [ ] Cloud Backup (Auto-sync) - *Planned*
 
 ---
 
