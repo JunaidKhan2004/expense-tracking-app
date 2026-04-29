@@ -10,13 +10,15 @@ import { useTheme } from '../../hooks/useTheme';
 import { useTransactionStore } from '../../store/useTransactionStore';
 import { useWalletStore } from '../../store/useWalletStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
-import { TransactionType } from '../../types';
+import { TransactionType, Transaction } from '../../types';
 import { Spacing, FontSize, Radius } from '../../constants/theme';
 import { showToast } from '../../utils/toast';
+import { useLocalSearchParams } from 'expo-router';
 
 export default function AddTransactionScreen() {
   const { colors } = useTheme();
-  const { addTransaction, categories } = useTransactionStore();
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const { addTransaction, updateTransaction, transactions, categories } = useTransactionStore();
   const { wallets, adjustBalance } = useWalletStore();
   const { settings } = useSettingsStore();
 
@@ -28,6 +30,10 @@ export default function AddTransactionScreen() {
   const [selectedWallet, setSelectedWallet] = useState(wallets[0]?.id ?? '');
   const [isRecurring, setIsRecurring] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [initialAmount, setInitialAmount] = useState<number | null>(null);
+
+  const isEdit = !!id;
+  const transactionToEdit = isEdit ? transactions.find(t => t.id === id) : null;
 
   const slideAnim = useRef(new Animated.Value(300)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -37,7 +43,18 @@ export default function AddTransactionScreen() {
       Animated.timing(fadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
       Animated.spring(slideAnim, { toValue: 0, tension: 65, friction: 10, useNativeDriver: true }),
     ]).start();
-  }, []);
+
+    if (isEdit && transactionToEdit) {
+      setType(transactionToEdit.type);
+      setAmount(transactionToEdit.amount.toString());
+      setInitialAmount(transactionToEdit.amount);
+      setTitle(transactionToEdit.title);
+      setNotes(transactionToEdit.notes ?? '');
+      setSelectedCategory(transactionToEdit.categoryId);
+      setSelectedWallet(transactionToEdit.walletId);
+      setIsRecurring(transactionToEdit.isRecurring);
+    }
+  }, [isEdit, transactionToEdit]);
 
   const filteredCategories = categories.filter((c) => c.type === type || c.type === 'both');
 
@@ -59,19 +76,43 @@ export default function AddTransactionScreen() {
     try {
       const numAmount = parseFloat(amount);
 
-      await addTransaction({
-        type,
-        amount: numAmount,
-        categoryId: selectedCategory,
-        walletId: selectedWallet,
-        title: title.trim(),
-        notes: notes.trim() || undefined,
-        date: new Date().toISOString(),
-        isRecurring,
-      });
+      if (isEdit && id) {
+        await updateTransaction(id, {
+          type,
+          amount: numAmount,
+          categoryId: selectedCategory,
+          walletId: selectedWallet,
+          title: title.trim(),
+          notes: notes.trim() || undefined,
+          isRecurring,
+        });
 
-      await adjustBalance(selectedWallet, numAmount, type);
-      showToast.success('Transaction Saved', `${type === 'income' ? 'Income' : 'Expense'} added successfully`);
+        // Re-adjust balance if amount or type changed
+        if (initialAmount !== null && (initialAmount !== numAmount || transactionToEdit?.type !== type)) {
+          // Reverse old amount
+          const oldType = transactionToEdit?.type === 'income' ? 'expense' : 'income';
+          await adjustBalance(transactionToEdit!.walletId, initialAmount, oldType);
+          // Apply new amount
+          await adjustBalance(selectedWallet, numAmount, type);
+        }
+        
+        showToast.success('Transaction Updated', 'Changes saved successfully');
+      } else {
+        await addTransaction({
+          type,
+          amount: numAmount,
+          categoryId: selectedCategory,
+          walletId: selectedWallet,
+          title: title.trim(),
+          notes: notes.trim() || undefined,
+          date: new Date().toISOString(),
+          isRecurring,
+        });
+
+        await adjustBalance(selectedWallet, numAmount, type);
+        showToast.success('Transaction Saved', `${type === 'income' ? 'Income' : 'Expense'} added successfully`);
+      }
+      
       setIsSaving(false);
       router.back();
     } catch (err) {
@@ -95,7 +136,7 @@ export default function AddTransactionScreen() {
               <TouchableOpacity onPress={() => router.back()} style={[styles.closeBtn, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Ionicons name="close" size={20} color={colors.text} />
               </TouchableOpacity>
-              <Text style={[styles.title, { color: colors.text }]}>Add Transaction</Text>
+              <Text style={[styles.title, { color: colors.text }]}>{isEdit ? 'Edit Transaction' : 'Add Transaction'}</Text>
               <TouchableOpacity
                 onPress={handleSave}
                 disabled={isSaving}

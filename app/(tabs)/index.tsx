@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import {
   Animated, Dimensions, RefreshControl,
   ScrollView,
@@ -20,13 +20,15 @@ import { useWalletStore } from '../../store/useWalletStore';
 import { useBudgetStore } from '../../store/useBudgetStore';
 import { useNotificationStore } from '../../store/useNotificationStore';
 import { formatCurrency, formatCurrencyFull } from '../../utils/formatters';
+import { generateAIInsights } from '../../utils/ai';
+import { handleUnderDevelopment } from '../../components/ui/FeatureWrapper';
 
 const { width } = Dimensions.get('window');
 
 export default function DashboardScreen() {
   const { colors } = useTheme();
   const { user } = useAuthStore();
-  const { transactions, categories, filteredTransactions, totalIncome, totalExpenses, netBalance, hydrate } = useTransactionStore();
+  const { transactions, categories, filteredTransactions, totalIncome, totalExpenses, netBalance, hydrate, deleteTransaction, filterPeriod, searchQuery } = useTransactionStore();
   const { wallets, totalBalance } = useWalletStore();
   const { settings } = useSettingsStore();
   const { budgets, getBudgetsWithProgress, hydrate: hydrateBudgets } = useBudgetStore();
@@ -37,6 +39,10 @@ export default function DashboardScreen() {
   const slideAnim = useRef(new Animated.Value(30)).current;
   const balanceScale = useRef(new Animated.Value(0.95)).current;
   const pulseAnim = useRef(new Animated.Value(0)).current;
+
+  const recentTransactions = useMemo(() => {
+    return filteredTransactions().slice(0, 5);
+  }, [transactions, filterPeriod, searchQuery]);
 
   useEffect(() => {
     Animated.parallel([
@@ -68,7 +74,6 @@ export default function DashboardScreen() {
     setRefreshing(false);
   };
 
-  const recentTransactions = filteredTransactions().slice(0, 5);
   const income = totalIncome();
   const expenses = totalExpenses();
   const savings = income - expenses;
@@ -171,6 +176,14 @@ export default function DashboardScreen() {
           />
         </Animated.View>
 
+        {/* ─── AI Smart Advisor ────────────────────────────────────────────── */}
+        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+          <AIAdvisorSection 
+            insights={generateAIInsights(transactions, categories, colors)} 
+            colors={colors} 
+          />
+        </Animated.View>
+
         {/* ─── Wallets ──────────────────────────────────────────────────────── */}
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
           <View style={styles.sectionHeader}>
@@ -219,7 +232,7 @@ export default function DashboardScreen() {
             </View>
           ) : (
             <View style={styles.budgetList}>
-              {budgetProgress.map((budget) => {
+              {budgetProgress.slice(0, 4).map((budget) => {
                 const category = categories.find(c => c.id === budget.categoryId);
                 const isOver = budget.percentage > 100;
                 return (
@@ -252,6 +265,15 @@ export default function DashboardScreen() {
                   </View>
                 );
               })}
+              {budgetProgress.length > 4 && (
+                <TouchableOpacity 
+                  style={[styles.seeMoreBtn, { borderColor: colors.border }]}
+                  onPress={() => router.push('/budget/manage')}
+                >
+                  <Text style={[styles.seeMoreText, { color: colors.textSecondary }]}>View All {budgetProgress.length} Budgets</Text>
+                  <Ionicons name="chevron-forward" size={14} color={colors.textSecondary} />
+                </TouchableOpacity>
+              )}
             </View>
           )}
         </Animated.View>
@@ -279,14 +301,77 @@ export default function DashboardScreen() {
                 key={t.id}
                 transaction={t}
                 onPress={(tx) => router.push(`/transaction/${tx.id}`)}
+                onEdit={(tx) => router.push({ pathname: '/transaction/add', params: { id: tx.id } } as any)}
+                onDelete={(id) => deleteTransaction(id)}
               />
             ))
+          )}
+          {filteredTransactions().length > 5 && (
+            <TouchableOpacity 
+              style={[styles.seeMoreBtn, { borderColor: colors.border, marginTop: Spacing.md }]}
+              onPress={() => router.push('/(tabs)/transactions')}
+            >
+              <Text style={[styles.seeMoreText, { color: colors.textSecondary }]}>View All {filteredTransactions().length} Transactions</Text>
+              <Ionicons name="chevron-forward" size={14} color={colors.textSecondary} />
+            </TouchableOpacity>
           )}
         </Animated.View>
 
         {/* Bottom space for FAB */}
         <View style={{ height: 100 }} />
       </ScrollView>
+    </View>
+  );
+}
+
+function AIAdvisorSection({ insights, colors }: any) {
+  const [isExpanded, setIsExpanded] = React.useState(false);
+  const mainInsight = insights[0];
+
+  return (
+    <View style={[styles.aiContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <TouchableOpacity 
+        style={styles.aiHeader} 
+        onPress={() => setIsExpanded(!isExpanded)}
+        activeOpacity={0.7}
+      >
+        <View style={[styles.aiIconBox, { backgroundColor: `${mainInsight.color}22` }]}>
+          <Ionicons name="sparkles" size={18} color={mainInsight.color} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.aiLabel, { color: colors.textMuted }]}>AI SMART ADVISOR</Text>
+          <Text style={[styles.aiMainTitle, { color: colors.text }]}>{mainInsight.title}</Text>
+        </View>
+        <Ionicons 
+          name={isExpanded ? "chevron-up" : "chevron-down"} 
+          size={18} 
+          color={colors.textMuted} 
+        />
+      </TouchableOpacity>
+      
+      <Text style={[styles.aiMainDesc, { color: colors.textSecondary }]}>
+        {mainInsight.description}
+      </Text>
+
+      {isExpanded && (
+        <View style={styles.aiExpandedList}>
+          {insights.slice(1).map((item: any, i: number) => (
+            <View key={i} style={[styles.aiSubRow, { borderTopColor: colors.border }]}>
+              <Ionicons name={item.icon} size={16} color={item.color} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.aiSubTitle, { color: colors.text }]}>{item.title}</Text>
+                <Text style={[styles.aiSubDesc, { color: colors.textSecondary }]}>{item.description}</Text>
+              </View>
+            </View>
+          ))}
+          <TouchableOpacity 
+            style={[styles.aiProBtn, { backgroundColor: colors.primaryGlow }]}
+            onPress={() => handleUnderDevelopment('Advanced AI Advisor')}
+          >
+            <Text style={[styles.aiProBtnText, { color: colors.primary }]}>Unlock Full AI Analysis</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }
@@ -364,4 +449,84 @@ const styles = StyleSheet.create({
   emptyState: { borderRadius: Radius.xl, padding: Spacing.xxl, alignItems: 'center', borderWidth: 1, gap: Spacing.sm },
   emptyText: { fontSize: FontSize.base, fontWeight: '500' },
   emptyAction: { fontSize: FontSize.base, fontWeight: '700' },
+  // AI Advisor Styles
+  aiContainer: {
+    borderRadius: Radius.xl,
+    padding: Spacing.md,
+    borderWidth: 1,
+    marginBottom: Spacing.xl,
+    ...Shadow.sm,
+  },
+  aiHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    marginBottom: 8,
+  },
+  aiIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  aiLabel: {
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 1,
+    marginBottom: 2,
+  },
+  aiMainTitle: {
+    fontSize: FontSize.base,
+    fontWeight: '700',
+  },
+  aiMainDesc: {
+    fontSize: 13,
+    lineHeight: 18,
+    paddingLeft: 4,
+  },
+  aiExpandedList: {
+    marginTop: Spacing.md,
+    gap: Spacing.md,
+  },
+  aiSubRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    paddingTop: Spacing.md,
+    borderTopWidth: 1,
+  },
+  aiSubTitle: {
+    fontSize: FontSize.sm,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  aiSubDesc: {
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  aiProBtn: {
+    marginTop: Spacing.sm,
+    height: 44,
+    borderRadius: Radius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  aiProBtnText: {
+    fontSize: FontSize.sm,
+    fontWeight: '700',
+  },
+  seeMoreBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderRadius: Radius.lg,
+    marginTop: Spacing.xs,
+    gap: 8,
+  },
+  seeMoreText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
 });

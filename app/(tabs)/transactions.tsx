@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput,
 } from 'react-native';
@@ -29,11 +29,13 @@ const TYPE_OPTIONS = [
 
 export default function TransactionsScreen() {
   const { colors } = useTheme();
-  const { filteredTransactions, filterPeriod, setFilterPeriod, setSearchQuery, searchQuery, deleteTransaction } = useTransactionStore();
+  const { filteredTransactions, filterPeriod, setFilterPeriod, setSearchQuery, searchQuery, deleteTransaction, transactions } = useTransactionStore();
   const [typeFilter, setTypeFilter] = useState('all');
 
-  const all = filteredTransactions();
-  const filtered = typeFilter === 'all' ? all : all.filter((t) => t.type === typeFilter);
+  const filtered = useMemo(() => {
+    const all = filteredTransactions();
+    return typeFilter === 'all' ? all : all.filter((t) => t.type === typeFilter);
+  }, [transactions, filterPeriod, searchQuery, typeFilter]);
 
   // Group by date label
   const grouped: { title: string; data: typeof filtered }[] = [];
@@ -115,6 +117,7 @@ export default function TransactionsScreen() {
               <TransactionItem
                 transaction={item.transaction}
                 onPress={(t) => router.push(`/transaction/${t.id}`)}
+                onEdit={(t) => router.push({ pathname: '/transaction/add', params: { id: t.id } } as any)}
                 onDelete={deleteTransaction}
                 showDate
               />

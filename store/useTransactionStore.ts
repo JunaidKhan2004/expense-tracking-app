@@ -201,12 +201,20 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
   },
 
   deleteTransaction: async (id) => {
+    const transaction = get().transactions.find(t => t.id === id);
+    if (!transaction) return;
+
     const { error } = await supabase.from('transactions').delete().eq('id', id);
 
     if (error) {
       console.error('Delete transaction error:', error);
       return;
     }
+
+    // Reverse balance adjustment
+    const { adjustBalance } = (await import('./useWalletStore')).useWalletStore.getState();
+    const reverseType = transaction.type === 'income' ? 'expense' : 'income';
+    await adjustBalance(transaction.walletId, transaction.amount, reverseType);
 
     set({
       transactions: get().transactions.filter((t) => t.id !== id),
