@@ -1,51 +1,99 @@
-# Welcome to your Expo app 👋
+# 🚀 FinVault Expense Tracker
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+FinVault is a modern, premium Expense Tracking application built with **React Native** and **Expo**. It features a stunning UI, smooth animations, and comprehensive financial management tools to help you track your income, expenses, and savings.
 
-## Get started
+---
 
-1. Install dependencies
+## ✨ Key Features
 
+- **Premium UI/UX:** Built with a cohesive design system, featuring glassmorphism, linear gradients, and smooth `Animated` transitions.
+- **Dark/Light Mode:** Full theming support that updates instantly across the app.
+- **Dashboard & Insights:** Get a quick overview of your total balance, monthly budget progress, and quick stats.
+- **Multiple Wallets:** Manage your finances across different accounts (Bank, Cash, Credit Card).
+- **Analytics & Charts:** Custom-built SVG Pie and Bar charts to visualize spending by category and income vs. expenses trends.
+- **Transaction Management:** Easily add, edit, search, and filter transactions. Includes recurring transaction support.
+- **State Management:** Powered by **Zustand** for fast, reliable global state, persisted locally with AsyncStorage.
+
+---
+
+## 🛠️ Tech Stack
+
+- **Framework:** React Native (0.81.5) & Expo (~54.0)
+- **Navigation:** Expo Router (File-based routing)
+- **Styling:** NativeWind (Tailwind CSS for React Native) & Custom Design System
+- **State Management:** Zustand
+- **Local Storage:** `@react-native-async-storage/async-storage`
+- **Charts:** `react-native-svg`
+- **Icons:** `@expo/vector-icons` (Ionicons)
+- **Animations:** React Native `Animated` API
+
+---
+
+## 📁 Project Structure
+
+```text
+expense-tracking-app/
+├── app/                    # Expo Router screens
+│   ├── (auth)/             # Login, Signup, Forgot Password
+│   ├── (tabs)/             # Main app tabs (Dashboard, Transactions, Analytics, Settings)
+│   ├── transaction/        # Add/Detail transaction modals
+│   ├── _layout.tsx         # Root layout & store hydration
+│   └── index.tsx           # Entry point (Auth redirect)
+├── components/             # Reusable React components
+│   ├── transaction/        # Transaction list items
+│   └── ui/                 # Buttons, Cards, Inputs, Badges
+├── constants/              # App constants
+│   ├── categories.ts       # Default categories & currencies
+│   └── theme.ts            # Design system (Colors, Spacing, Typography)
+├── hooks/                  # Custom React hooks (e.g., useTheme)
+├── store/                  # Zustand state stores
+│   ├── useAuthStore.ts
+│   ├── useSettingsStore.ts
+│   ├── useTransactionStore.ts
+│   └── useWalletStore.ts
+├── types/                  # TypeScript type definitions
+└── utils/                  # Helper functions
+    ├── formatters.ts       # Date, currency, and chart formatting
+    └── storage.ts          # AsyncStorage wrapper
+```
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+Make sure you have Node.js installed. You will also need the **Expo Go** app on your iOS/Android device, or an emulator set up on your machine.
+
+### Installation
+
+1. **Clone the repository** (if applicable) or navigate to the project directory:
+   ```bash
+   cd expense-tracking-app
+   ```
+
+2. **Install dependencies:**
    ```bash
    npm install
    ```
 
-2. Start the app
-
+3. **Start the development server:**
    ```bash
-   npx expo start
+   npx expo start --clear
    ```
 
-In the output, you'll find options to open the app in a
+4. **Run the app:**
+   - Scan the QR code with your camera (iOS) or the Expo Go app (Android).
+   - Press `a` to run on Android Emulator.
+   - Press `i` to run on iOS Simulator.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+---
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## 🎨 Theming and Customization
 
-## Get a fresh project
+The app's entire color palette, spacing, and typography are controlled via `constants/theme.ts`. To change the primary color or adjust the dark mode aesthetics, simply modify the `Colors` object in that file. The custom `useTheme` hook automatically applies these changes across all components.
 
-When you're ready, run:
+---
 
-```bash
-npm run reset-project
-```
+## 📝 License
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
-"# expense-tracking-app" 
+This project is open-source and available under the MIT License.
