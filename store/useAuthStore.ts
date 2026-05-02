@@ -113,7 +113,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   signInWithGoogle: async () => {
     set({ isLoading: true, error: null });
     try {
-      const redirectUri = Linking.createURL('/(auth)/login');
+      // Create a clean redirect URL
+      const redirectUri = Linking.createURL('/');
+      console.log('--- Auth Debug ---');
+      console.log('Auth Redirect URI:', redirectUri);
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -124,14 +127,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
 
       if (error) throw error;
+      console.log('Supabase Auth URL generated');
 
       const res = await WebBrowser.openAuthSessionAsync(data.url, redirectUri);
+      console.log('WebBrowser result type:', res.type);
 
       if (res.type === 'success' && res.url) {
-        // Extract token from URL (Supabase returns it in the hash)
-        const url = new URL(res.url.replace('#', '?'));
-        const accessToken = url.searchParams.get('access_token');
-        const refreshToken = url.searchParams.get('refresh_token');
+        console.log('Auth success, parsing URL...');
+        // Supabase returns tokens in the hash (#access_token=...)
+        const params = new URLSearchParams(res.url.split('#')[1] || res.url.split('?')[1]);
+        const accessToken = params.get('access_token');
+        const refreshToken = params.get('refresh_token');
 
         if (accessToken && refreshToken) {
           const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
@@ -142,15 +148,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           if (sessionError) throw sessionError;
 
           if (sessionData.user) {
-            // Re-hydrate to get profile
             await get().hydrate();
             return true;
           }
         }
       }
+      
+      if (res.type === 'cancel') {
+        console.log('User cancelled login');
+      }
+      
       set({ isLoading: false });
       return false;
     } catch (err: any) {
+      console.error('Google login detailed error:', err);
       set({ error: err.message || 'Google login failed', isLoading: false });
       return false;
     }

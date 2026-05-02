@@ -24,7 +24,7 @@ const { width, height } = Dimensions.get('window');
 
 export default function LoginScreen() {
   const { colors, isDark } = useTheme();
-  const { login, isLoading, error, clearError } = useAuthStore();
+  const { login, signInWithGoogle, isLoading, error, clearError } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState('');
@@ -62,6 +62,14 @@ export default function LoginScreen() {
       router.replace('/(tabs)');
     } else {
       showToast.error('Login Failed', 'Invalid email or password');
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    const success = await signInWithGoogle();
+    if (success) {
+      showToast.success('Login Successful', `Welcome to FinVault!`);
+      router.replace('/(tabs)');
     }
   };
 
@@ -144,7 +152,7 @@ export default function LoginScreen() {
               <TouchableOpacity
                 style={[styles.googleBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
                 activeOpacity={0.8}
-                onPress={handleLogin}
+                onPress={handleGoogleLogin}
               >
                 <Text style={styles.googleLetter}>G</Text>
                 <Text style={[styles.googleText, { color: colors.text }]}>Continue with Google</Text>

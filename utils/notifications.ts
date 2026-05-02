@@ -1,19 +1,48 @@
-import Constants from 'expo-constants';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import * as Device from 'expo-device';
-import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+
+/**
+ * Helper to get the notifications library safely.
+ * In Expo Go on Android, push notification functionality is removed and can cause errors.
+ */
+const getNotifications = () => {
+  try {
+    return require('expo-notifications');
+  } catch (e) {
+    console.warn('expo-notifications could not be loaded:', e);
+    return null;
+  }
+};
+
+// Initialize the notification handler
+if (!isExpoGo || Platform.OS === 'ios') {
+  const Notifications = getNotifications();
+  if (Notifications) {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      }),
+    });
+  }
+}
 
 export async function registerForPushNotificationsAsync() {
+  // Push notifications are not supported in Expo Go on Android since SDK 53
+  if (isExpoGo && Platform.OS === 'android') {
+    console.warn('Push notifications (remote) are not supported in Expo Go on Android. Please use a development build.');
+    return;
+  }
+
+  const Notifications = getNotifications();
+  if (!Notifications) return;
+
   let token;
 
   if (Platform.OS === 'android') {
@@ -59,6 +88,9 @@ export async function registerForPushNotificationsAsync() {
 }
 
 export async function sendLocalNotification(title: string, body: string, data?: any) {
+  const Notifications = getNotifications();
+  if (!Notifications) return;
+
   try {
     await Notifications.scheduleNotificationAsync({
       content: {
