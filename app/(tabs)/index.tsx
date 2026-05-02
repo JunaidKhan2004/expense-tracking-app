@@ -28,7 +28,7 @@ import { formatCurrency, formatCurrencyFull } from '../../utils/formatters';
 const { width } = Dimensions.get('window');
 
 export default function DashboardScreen() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { user } = useAuthStore();
   const { transactions, categories, filteredTransactions, totalIncome, totalExpenses, netBalance, hydrate, deleteTransaction, filterPeriod, searchQuery } = useTransactionStore();
   const { wallets, totalBalance } = useWalletStore();
@@ -185,6 +185,7 @@ export default function DashboardScreen() {
           <AIAdvisorSection
             insights={generateAIInsights(transactions, categories, colors)}
             colors={colors}
+            isDark={isDark}
           />
         </Animated.View>
 
@@ -328,7 +329,7 @@ export default function DashboardScreen() {
   );
 }
 
-function AIAdvisorSection({ insights, colors }: any) {
+function AIAdvisorSection({ insights, colors, isDark }: any) {
   const [isExpanded, setIsExpanded] = React.useState(false);
   const { user } = useAuthStore();
   const mainInsight = insights[0];

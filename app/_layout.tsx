@@ -1,3 +1,4 @@
+import 'react-native-url-polyfill/auto';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
@@ -19,7 +20,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 export default function RootLayout() {
-  const { hydrate: hydrateAuth } = useAuthStore();
+  const { hydrate: hydrateAuth, isAuthenticated } = useAuthStore();
   const { hydrate: hydrateTransactions } = useTransactionStore();
   const { hydrate: hydrateWallets } = useWalletStore();
   const { hydrate: hydrateSettings } = useSettingsStore();
@@ -28,19 +29,25 @@ export default function RootLayout() {
   const { isDark, colors } = useTheme();
 
   useEffect(() => {
-    // Hydrate all stores from AsyncStorage on app start
-    Promise.all([
-      hydrateAuth(),
-      hydrateTransactions(),
-      hydrateWallets(),
-      hydrateSettings(),
-      hydrateBudgets(),
-      hydrateNotifications(),
-    ]);
-
+    // Initial auth hydration
+    hydrateAuth();
+    hydrateSettings();
+    
     // Register for notifications
     registerForPushNotificationsAsync();
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      // Hydrate data stores when user is authenticated
+      Promise.all([
+        hydrateTransactions(),
+        hydrateWallets(),
+        hydrateBudgets(),
+        hydrateNotifications(),
+      ]);
+    }
+  }, [isAuthenticated]);
 
   // Premium Toast Configuration
   const toastConfig = {
@@ -135,8 +142,8 @@ export default function RootLayout() {
               options={{ animation: 'slide_from_bottom', presentation: 'modal', headerShown: false }}
             />
           </Stack>
-          <Toast config={toastConfig} />
         </AuthGuard>
+        <Toast config={toastConfig} />
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

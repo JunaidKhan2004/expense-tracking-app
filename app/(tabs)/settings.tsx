@@ -23,6 +23,7 @@ import { useTransactionStore } from '../../store/useTransactionStore';
 import { useWalletStore } from '../../store/useWalletStore';
 import { exportTransactionsToCSV, exportTransactionsToPDF } from '../../utils/export';
 import { showToast } from '../../utils/toast';
+import { SelectionModal } from '../../components/ui/SelectionModal';
 
 function SettingRow({ icon, label, value, onPress, rightElement, color, colors }: any) {
   return (
@@ -110,6 +111,7 @@ export default function SettingsScreen() {
   const { settings, setTheme, setCurrency, toggleNotifications, toggleBiometric, updateSettings } = useSettingsStore();
   const { categories, transactions } = useTransactionStore();
   const { wallets, totalBalance } = useWalletStore();
+  const [showCurrencyModal, setShowCurrencyModal] = React.useState(false);
 
   const handleLogout = () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
@@ -118,23 +120,23 @@ export default function SettingsScreen() {
     ]);
   };
 
-  const handleCurrencySelect = () => {
+  const handleCurrencySelect = (code: string) => {
     Alert.alert(
-      'Convert Currency',
-      'This will permanently convert all your existing transactions and balances using current market rates. Continue?',
+      'Confirm Conversion',
+      `Permanently convert all transactions to ${code}? This uses real-time market rates.`,
       [
         { text: 'Cancel', style: 'cancel' },
-        ...CURRENCIES.slice(0, 10).map((c) => ({
-          text: `${c.symbol} ${c.name} (${c.code})`,
+        {
+          text: 'Convert',
           onPress: async () => {
             try {
-              await setCurrency(c.code);
-              showToast.success('Currency Converted', `All values are now in ${c.code}`);
+              await setCurrency(code);
+              showToast.success('Currency Converted', `All values are now in ${code}`);
             } catch (err) {
               showToast.error('Conversion Failed', 'Please check your internet connection.');
             }
           },
-        }))
+        },
       ]
     );
   };
@@ -254,7 +256,7 @@ export default function SettingsScreen() {
             icon="cash"
             label="Currency"
             value={CURRENCIES.find((c) => c.code === settings.currency)?.symbol + ' ' + settings.currency}
-            onPress={handleCurrencySelect}
+            onPress={() => setShowCurrencyModal(true)}
             colors={colors}
             color="#FFB830"
           />
@@ -453,6 +455,21 @@ export default function SettingsScreen() {
         <Text style={[styles.version, { color: colors.textMuted }]}>FinVault v1.0.0 · Built by <Text style={{ fontWeight: 'bold' }}>Junaid Dev</Text></Text>
         <View style={{ height: 100 }} />
       </ScrollView>
+
+      <SelectionModal
+        visible={showCurrencyModal}
+        onClose={() => setShowCurrencyModal(false)}
+        title="Select Currency"
+        selectedValue={settings.currency}
+        options={CURRENCIES.map((c) => ({
+          id: c.code,
+          label: `${c.name} (${c.code})`,
+          subLabel: `Symbol: ${c.symbol}`,
+          icon: 'cash-outline',
+          iconColor: '#FFB830',
+        }))}
+        onSelect={(opt) => handleCurrencySelect(opt.id)}
+      />
     </View>
   );
 }

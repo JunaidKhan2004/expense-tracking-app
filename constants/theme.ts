@@ -19,7 +19,7 @@ export const Colors = {
     secondaryLight: '#DFF6EC',
     secondaryGlow: 'rgba(176, 228, 204, 0.2)',
 
-    accent: '#FFB830',
+    accent: '#408A71',
     accentGlow: 'rgba(255, 184, 48, 0.2)',
 
     success: '#408A71',
@@ -79,7 +79,7 @@ export const Colors = {
     secondaryLight: '#408A71',
     secondaryGlow: 'rgba(40, 90, 72, 0.15)',
 
-    accent: '#FFB830',
+    accent: '#408A71',
     accentGlow: 'rgba(255, 184, 48, 0.15)',
 
     success: '#408A71',

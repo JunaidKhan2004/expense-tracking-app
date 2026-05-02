@@ -113,9 +113,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   signInWithGoogle: async () => {
     set({ isLoading: true, error: null });
     try {
-      // Create a clean redirect URL
+      // Create a clean redirect URL for the build
       const redirectUri = Linking.createURL('/');
-      console.log('--- Auth Debug ---');
       console.log('Auth Redirect URI:', redirectUri);
       
       const { data, error } = await supabase.auth.signInWithOAuth({
@@ -127,15 +126,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
 
       if (error) throw error;
-      console.log('Supabase Auth URL generated');
 
       const res = await WebBrowser.openAuthSessionAsync(data.url, redirectUri);
-      console.log('WebBrowser result type:', res.type);
 
       if (res.type === 'success' && res.url) {
-        console.log('Auth success, parsing URL...');
-        // Supabase returns tokens in the hash (#access_token=...)
-        const params = new URLSearchParams(res.url.split('#')[1] || res.url.split('?')[1]);
+        // Extract tokens from either the hash (#) or the query (?)
+        // Supabase typically uses the hash for implicit flow tokens
+        const urlParts = res.url.split('#');
+        const hash = urlParts[1];
+        const query = res.url.split('?')[1];
+        
+        const params = new URLSearchParams(hash || query || '');
         const accessToken = params.get('access_token');
         const refreshToken = params.get('refresh_token');
 
@@ -151,17 +152,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             await get().hydrate();
             return true;
           }
+        } else {
+          console.error('No tokens found in redirect URL:', res.url);
+          set({ error: 'Authentication tokens not found. Please check your Supabase configuration.' });
         }
-      }
-      
-      if (res.type === 'cancel') {
+      } else if (res.type === 'cancel') {
         console.log('User cancelled login');
+      } else {
+        console.log('Auth session ended with type:', res.type);
       }
       
       set({ isLoading: false });
       return false;
     } catch (err: any) {
-      console.error('Google login detailed error:', err);
+      console.error('Google login error:', err);
       set({ error: err.message || 'Google login failed', isLoading: false });
       return false;
     }

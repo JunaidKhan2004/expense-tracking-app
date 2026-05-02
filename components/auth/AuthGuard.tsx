@@ -91,77 +91,78 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     return () => subscription.remove();
   }, [shouldLock]);
 
-  if (shouldLock && !isAuthenticated) {
-    return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        {!showPinFallback ? (
-          <>
-            <LinearGradient colors={colors.gradient.primary} style={styles.iconBox}>
-              <Ionicons name="lock-closed" size={40} color="#fff" />
-            </LinearGradient>
-            <Text style={[styles.title, { color: colors.text }]}>FinVault Locked</Text>
-            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-              Authentication required to access your data
-            </Text>
-
-            <TouchableOpacity style={styles.unlockBtn} onPress={authenticate}>
-              <LinearGradient colors={colors.gradient.primary} style={styles.btnGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-                <Ionicons name="finger-print" size={20} color="#fff" />
-                <Text style={styles.btnText}>Unlock with Biometrics</Text>
+  return (
+    <View style={{ flex: 1 }}>
+      {children}
+      {shouldLock && !isAuthenticated && (
+        <View style={[StyleSheet.absoluteFill, styles.container, { backgroundColor: colors.background, zIndex: 9999 }]}>
+          {!showPinFallback ? (
+            <>
+              <LinearGradient colors={colors.gradient.primary} style={styles.iconBox}>
+                <Ionicons name="lock-closed" size={40} color="#fff" />
               </LinearGradient>
-            </TouchableOpacity>
+              <Text style={[styles.title, { color: colors.text }]}>FinVault Locked</Text>
+              <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+                Authentication required to access your data
+              </Text>
 
-            {settings.pinEnabled && (
-              <TouchableOpacity style={{ marginTop: 20 }} onPress={() => setShowPinFallback(true)}>
-                <Text style={{ color: colors.primary, fontWeight: '700' }}>Use Security PIN</Text>
+              <TouchableOpacity style={styles.unlockBtn} onPress={authenticate}>
+                <LinearGradient colors={colors.gradient.primary} style={styles.btnGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+                  <Ionicons name="finger-print" size={20} color="#fff" />
+                  <Text style={styles.btnText}>Unlock with Biometrics</Text>
+                </LinearGradient>
               </TouchableOpacity>
-            )}
-          </>
-        ) : (
-          <View style={{ alignItems: 'center', width: '100%' }}>
-            <Text style={[styles.title, { color: colors.text }]}>Enter PIN</Text>
-            <Animated.View style={[styles.dots, { transform: [{ translateX: shakeAnim }] }]}>
-              {[1, 2, 3, 4].map((i) => (
-                <View
-                  key={i}
-                  style={[
-                    styles.dot,
-                    {
-                      backgroundColor: pinInput.length >= i ? colors.primary : colors.border,
-                      borderColor: pinInput.length >= i ? colors.primary : colors.border,
-                    }
-                  ]}
-                />
-              ))}
-            </Animated.View>
 
-            <View style={styles.pad}>
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
-                <TouchableOpacity key={n} style={styles.numBtn} onPress={() => handlePinPress(String(n))}>
-                  <Text style={[styles.numText, { color: colors.text }]}>{n}</Text>
+              {settings.pinEnabled && (
+                <TouchableOpacity style={{ marginTop: 20 }} onPress={() => setShowPinFallback(true)}>
+                  <Text style={{ color: colors.primary, fontWeight: '700' }}>Use Security PIN</Text>
                 </TouchableOpacity>
-              ))}
-              <View style={styles.numBtn} />
-              <TouchableOpacity style={styles.numBtn} onPress={() => handlePinPress('0')}>
-                <Text style={[styles.numText, { color: colors.text }]}>0</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.numBtn} onPress={() => setPinInput(pinInput.slice(0, -1))}>
-                <Ionicons name="backspace-outline" size={24} color={colors.text} />
-              </TouchableOpacity>
+              )}
+            </>
+          ) : (
+            <View style={{ alignItems: 'center', width: '100%' }}>
+              <Text style={[styles.title, { color: colors.text }]}>Enter PIN</Text>
+              <Animated.View style={[styles.dots, { transform: [{ translateX: shakeAnim }] }]}>
+                {[1, 2, 3, 4].map((i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.dot,
+                      {
+                        backgroundColor: pinInput.length >= i ? colors.primary : colors.border,
+                        borderColor: pinInput.length >= i ? colors.primary : colors.border,
+                      }
+                    ]}
+                  />
+                ))}
+              </Animated.View>
+
+              <View style={styles.pad}>
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
+                  <TouchableOpacity key={n} style={styles.numBtn} onPress={() => handlePinPress(String(n))}>
+                    <Text style={[styles.numText, { color: colors.text }]}>{n}</Text>
+                  </TouchableOpacity>
+                ))}
+                <View style={styles.numBtn} />
+                <TouchableOpacity style={styles.numBtn} onPress={() => handlePinPress('0')}>
+                  <Text style={[styles.numText, { color: colors.text }]}>0</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.numBtn} onPress={() => setPinInput(pinInput.slice(0, -1))}>
+                  <Ionicons name="backspace-outline" size={24} color={colors.text} />
+                </TouchableOpacity>
+              </View>
+
+              {settings.biometricEnabled && (
+                <TouchableOpacity style={{ marginTop: 30 }} onPress={() => setShowPinFallback(false)}>
+                  <Ionicons name="finger-print" size={40} color={colors.primary} />
+                </TouchableOpacity>
+              )}
             </View>
-
-            {settings.biometricEnabled && (
-              <TouchableOpacity style={{ marginTop: 30 }} onPress={() => setShowPinFallback(false)}>
-                <Ionicons name="finger-print" size={40} color={colors.primary} />
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
-      </View>
-    );
-  }
-
-  return <>{children}</>;
+          )}
+        </View>
+      )}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({

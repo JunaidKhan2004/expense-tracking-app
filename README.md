@@ -13,6 +13,8 @@ FinVault is a modern, premium Expense Tracking application built with **React Na
 - **Real-time Financial Sync:** Automatic wallet balance adjustments when adding, editing, or deleting transactions. Your net balance and category budgets stay perfectly in sync.
 - **Advanced Budgeting Engine:** Set category-wise monthly spending limits with real-time progress tracking and visual color alerts (Healthy vs. Over-budget) on the dashboard.
 - **Premium UI/UX:** A clean, professional interface featuring glassmorphism, linear gradients, dynamic profile stats, and smooth `Animated` transitions.
+- **Custom Animated Splash Screen (New!):** A theme-aware, immersive startup experience with pulsing animations to welcome users.
+- **Dynamic Bottom Navigation (New!):** A modern, minimalist active-label tab bar with smooth spring transitions and a glowing floating action button.
 - **Security & Privacy:** Dual-layer security with **Biometric Lock (FaceID/Fingerprint)** and **4-digit PIN fallback**.
 - **Data Export (Pro):** Generate professional **PDF Reports** with branding, or export raw data to **CSV** for detailed analysis.
 - **Smart Notifications Center:** Local and push notification system with budget threshold alerts (80%/100%) and a dedicated notification history view.

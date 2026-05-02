@@ -1,28 +1,80 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Redirect, router, Tabs } from 'expo-router';
-import { Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { Colors, Shadow } from '../../constants/theme';
+import React, { useEffect } from 'react';
+import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Animated, {
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring
+} from 'react-native-reanimated';
+import { Shadow } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuthStore } from '../../store/useAuthStore';
 
+function TabBarIcon({ name, focused, color, label }: { name: string, focused: boolean, color: string, label: string }) {
+  const { colors } = useTheme();
+  const transition = useSharedValue(focused ? 1 : 0);
+
+  useEffect(() => {
+    transition.value = withSpring(focused ? 1 : 0, { damping: 15 });
+  }, [focused]);
+
+  const iconStyle = useAnimatedStyle(() => ({
+    transform: [
+      { scale: interpolate(transition.value, [0, 1], [1, 1.1]) },
+      { translateY: interpolate(transition.value, [0, 1], [0, -2]) }
+    ],
+  }));
+
+  const labelStyle = useAnimatedStyle(() => ({
+    opacity: transition.value,
+    transform: [{ translateY: interpolate(transition.value, [0, 1], [10, 0]) }],
+    height: interpolate(transition.value, [0, 1], [0, 16]),
+  }));
+
+  return (
+    <View style={styles.tabItem}>
+      <Animated.View style={iconStyle}>
+        <Ionicons
+          name={focused ? (name as any) : (`${name}-outline` as any)}
+          size={20}
+          color={focused ? colors.primary : colors.textMuted}
+        />
+      </Animated.View>
+      <Animated.View style={[styles.labelWrapper, labelStyle]}>
+        <Text style={[styles.tabLabel, { color: colors.primary }]}>{label}</Text>
+      </Animated.View>
+    </View>
+  );
+}
+
 function FloatingAddButton() {
   const { colors } = useTheme();
+
   return (
-    <TouchableOpacity
-      onPress={() => router.push('/transaction/add')}
-      style={styles.fabWrapper}
-      activeOpacity={0.9}
-    >
-      <LinearGradient 
-        colors={colors.gradient.primary} 
-        style={[styles.fab, { shadowColor: colors.primary }]} 
-        start={{ x: 0, y: 0 }} 
-        end={{ x: 1, y: 1 }}
+    <View style={styles.fabContainer}>
+      <TouchableOpacity
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          router.push('/transaction/add');
+        }}
+        activeOpacity={0.8}
       >
-        <Ionicons name="add" size={28} color="#fff" />
-      </LinearGradient>
-    </TouchableOpacity>
+        <LinearGradient
+          colors={colors.gradient.primary}
+          style={[styles.fab, { shadowColor: colors.primary }]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        >
+          <View style={styles.fabInner}>
+            <Ionicons name="add" size={32} color="#fff" />
+          </View>
+        </LinearGradient>
+      </TouchableOpacity>
+    </View>
   );
 }
 
@@ -38,46 +90,38 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
+        tabBarShowLabel: false,
         tabBarStyle: {
-          backgroundColor: colors.tab.background,
-          borderTopColor: colors.border,
-          borderTopWidth: 1,
-          height: Platform.OS === 'ios' ? 88 : 68,
-          paddingBottom: Platform.OS === 'ios' ? 28 : 10,
-          paddingTop: 10,
+          backgroundColor: colors.card,
+          borderTopWidth: 0,
+          height: Platform.OS === 'ios' ? 95 : 75,
+          paddingBottom: Platform.OS === 'ios' ? 35 : 15,
+          paddingTop: 12,
           ...Shadow.lg,
+          borderTopLeftRadius: 30,
+          borderTopRightRadius: 30,
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
         },
-        tabBarActiveTintColor: colors.tab.active,
-        tabBarInactiveTintColor: colors.tab.inactive,
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600', marginTop: 2 },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color, focused }) => (
-            <View style={focused ? [styles.activeIcon, { backgroundColor: colors.primaryGlow }] : null}>
-              <Ionicons name={focused ? 'home' : 'home-outline'} size={22} color={color} />
-            </View>
-          ),
+          tabBarIcon: (props) => <TabBarIcon name="home" label="Home" {...props} />,
         }}
       />
       <Tabs.Screen
         name="transactions"
         options={{
-          title: 'History',
-          tabBarIcon: ({ color, focused }) => (
-            <View style={focused ? [styles.activeIcon, { backgroundColor: colors.primaryGlow }] : null}>
-              <Ionicons name={focused ? 'list' : 'list-outline'} size={22} color={color} />
-            </View>
-          ),
+          tabBarIcon: (props) => <TabBarIcon name="receipt" label="History" {...props} />,
         }}
       />
       <Tabs.Screen
         name="add"
         options={{
-          title: '',
           tabBarIcon: () => <FloatingAddButton />,
           tabBarStyle: { display: 'none' },
         }}
@@ -85,23 +129,13 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="analytics"
         options={{
-          title: 'Analytics',
-          tabBarIcon: ({ color, focused }) => (
-            <View style={focused ? [styles.activeIcon, { backgroundColor: colors.primaryGlow }] : null}>
-              <Ionicons name={focused ? 'bar-chart' : 'bar-chart-outline'} size={22} color={color} />
-            </View>
-          ),
+          tabBarIcon: (props) => <TabBarIcon name="stats-chart" label="Stats" {...props} />,
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
-          title: 'Settings',
-          tabBarIcon: ({ color, focused }) => (
-            <View style={focused ? [styles.activeIcon, { backgroundColor: colors.primaryGlow }] : null}>
-              <Ionicons name={focused ? 'settings' : 'settings-outline'} size={22} color={color} />
-            </View>
-          ),
+          tabBarIcon: (props) => <TabBarIcon name="person" label="Profile" {...props} />,
         }}
       />
     </Tabs>
@@ -109,27 +143,43 @@ export default function TabsLayout() {
 }
 
 const styles = StyleSheet.create({
-  fabWrapper: {
+  tabItem: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: -28,
+    minWidth: 60,
+  },
+  labelWrapper: {
+    overflow: 'hidden',
+    marginTop: 4,
+  },
+  tabLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  fabContainer: {
+    top: -25,
+    height: 70,
+    width: 70,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   fab: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    alignItems: 'center',
-    justifyContent: 'center',
-    // shadowColor moved to inline style for theme support
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.5,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    padding: 3,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
     shadowRadius: 12,
     elevation: 10,
   },
-  activeIcon: {
-    width: 40,
-    height: 28,
-    borderRadius: 10,
+  fabInner: {
+    flex: 1,
+    borderRadius: 27,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
   },
