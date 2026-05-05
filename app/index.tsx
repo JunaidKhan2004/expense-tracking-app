@@ -85,8 +85,8 @@ export default function Index() {
       <View style={styles.content}>
         <Animated.View style={[styles.logoContainer, logoStyle, { backgroundColor: colors.primaryGlow }]}>
           <Image 
-            source={isDark ? require('../assets/images/finVault_white.png') : require('../assets/images/finVault_black.png')}
-            style={{ width: 64, height: 64, resizeMode: 'contain' }}
+            source={isDark ? require('../assets/images/finVaultAppLogoDark.png') : require('../assets/images/finVaultAppLogoLight.png')}
+            style={{ width: 80, height: 80, resizeMode: 'contain' }}
           />
         </Animated.View>
 

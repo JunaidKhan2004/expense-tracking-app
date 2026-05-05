@@ -9,6 +9,11 @@ const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreCl
  * In Expo Go on Android, push notification functionality is removed and can cause errors.
  */
 const getNotifications = () => {
+  // CRITICAL: expo-notifications crashes on Android Expo Go SDK 53+ during import/require
+  if (isExpoGo && Platform.OS === 'android') {
+    return null;
+  }
+
   try {
     return require('expo-notifications');
   } catch (e) {
@@ -18,9 +23,9 @@ const getNotifications = () => {
 };
 
 // Initialize the notification handler
-if (!isExpoGo || Platform.OS === 'ios') {
-  const Notifications = getNotifications();
-  if (Notifications) {
+const Notifications = getNotifications();
+if (Notifications) {
+  try {
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
         shouldShowAlert: true,
@@ -30,6 +35,8 @@ if (!isExpoGo || Platform.OS === 'ios') {
         shouldShowList: true,
       }),
     });
+  } catch (e) {
+    console.warn('Failed to set notification handler:', e);
   }
 }
 

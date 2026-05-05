@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { BlurView } from 'expo-blur';
 import React, { useEffect, useMemo, useRef } from 'react';
 import {
   Animated, Dimensions, RefreshControl,
@@ -13,11 +13,11 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TransactionItem } from '../../components/transaction/TransactionItem';
-import { handleUnderDevelopment } from '../../components/ui/FeatureWrapper';
 import { FontSize, Radius, Shadow, Spacing } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useBudgetStore } from '../../store/useBudgetStore';
+import { useGoalStore } from '../../store/useGoalStore';
 import { useNotificationStore } from '../../store/useNotificationStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { useTransactionStore } from '../../store/useTransactionStore';
@@ -34,6 +34,7 @@ export default function DashboardScreen() {
   const { wallets, totalBalance } = useWalletStore();
   const { settings } = useSettingsStore();
   const { budgets, getBudgetsWithProgress, hydrate: hydrateBudgets } = useBudgetStore();
+  const { goals, hydrate: hydrateGoals } = useGoalStore();
   const { unreadCount } = useNotificationStore();
   const [refreshing, setRefreshing] = React.useState(false);
 
@@ -72,7 +73,7 @@ export default function DashboardScreen() {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([hydrate(), hydrateBudgets()]);
+    await Promise.all([hydrate(), hydrateBudgets(), hydrateGoals()]);
     setRefreshing(false);
   };
 
@@ -216,6 +217,47 @@ export default function DashboardScreen() {
                 <Text style={styles.walletType}>{wallet.type.toUpperCase()}</Text>
               </LinearGradient>
             ))}
+          </ScrollView>
+        </Animated.View>
+
+        {/* ─── Financial Goals ──────────────────────────────────────────────── */}
+        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Saving Goals</Text>
+            <TouchableOpacity onPress={() => router.push('/goals')}>
+              <Text style={[styles.seeAll, { color: colors.primary }]}>View All</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.walletsRow}>
+            {goals.length === 0 ? (
+              <TouchableOpacity
+                style={[styles.emptyGoalCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+                onPress={() => router.push('/goals/add')}
+              >
+                <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
+                <Text style={[styles.emptyGoalText, { color: colors.textMuted }]}>Add a goal</Text>
+              </TouchableOpacity>
+            ) : (
+              goals.map((goal) => {
+                const pct = (goal.currentAmount / goal.targetAmount) * 100;
+                return (
+                  <TouchableOpacity
+                    key={goal.id}
+                    style={[styles.miniGoalCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+                    onPress={() => router.push(`/goals/${goal.id}`)}
+                  >
+                    <View style={[styles.miniGoalIcon, { backgroundColor: `${goal.color}22` }]}>
+                      <Ionicons name={goal.icon as any} size={16} color={goal.color} />
+                    </View>
+                    <Text style={[styles.miniGoalName, { color: colors.text }]} numberOfLines={1}>{goal.name}</Text>
+                    <Text style={[styles.miniGoalPct, { color: goal.color }]}>{Math.round(pct)}%</Text>
+                    <View style={[styles.miniGoalProgress, { backgroundColor: colors.border }]}>
+                      <View style={[styles.miniGoalFill, { width: `${Math.min(pct, 100)}%`, backgroundColor: goal.color }]} />
+                    </View>
+                  </TouchableOpacity>
+                );
+              })
+            )}
           </ScrollView>
         </Animated.View>
 
@@ -456,6 +498,15 @@ const styles = StyleSheet.create({
   walletName: { color: '#fff', fontSize: FontSize.sm, fontWeight: '700' },
   walletBalance: { color: '#fff', fontSize: FontSize.lg, fontWeight: '800' },
   walletType: { color: 'rgba(255,255,255,0.65)', fontSize: FontSize.xs, fontWeight: '600', letterSpacing: 0.5 },
+  // Mini Goal Cards
+  miniGoalCard: { width: 120, borderRadius: Radius.lg, padding: Spacing.sm, borderWidth: 1, gap: 4 },
+  miniGoalIcon: { width: 30, height: 30, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  miniGoalName: { fontSize: 12, fontWeight: '700' },
+  miniGoalPct: { fontSize: 10, fontWeight: '800' },
+  miniGoalProgress: { height: 4, borderRadius: 2, overflow: 'hidden' },
+  miniGoalFill: { height: '100%', borderRadius: 2 },
+  emptyGoalCard: { width: 120, borderRadius: Radius.lg, padding: Spacing.sm, borderWidth: 1, alignItems: 'center', justifyContent: 'center', borderStyle: 'dashed', gap: 4 },
+  emptyGoalText: { fontSize: 10, fontWeight: '600' },
   // Budget
   budgetList: { gap: Spacing.md },
   budgetCard: { borderRadius: Radius.xl, padding: Spacing.md, borderWidth: 1 },

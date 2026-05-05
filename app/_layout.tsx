@@ -14,6 +14,7 @@ import { useNotificationStore } from '../store/useNotificationStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useTransactionStore } from '../store/useTransactionStore';
 import { useWalletStore } from '../store/useWalletStore';
+import { useGoalStore } from '../store/useGoalStore';
 import { registerForPushNotificationsAsync } from '../utils/notifications';
 
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -26,6 +27,7 @@ export default function RootLayout() {
   const { hydrate: hydrateSettings } = useSettingsStore();
   const { hydrate: hydrateBudgets } = useBudgetStore();
   const { hydrate: hydrateNotifications } = useNotificationStore();
+  const { hydrate: hydrateGoals } = useGoalStore();
   const { isDark, colors } = useTheme();
 
   useEffect(() => {
@@ -45,6 +47,7 @@ export default function RootLayout() {
         hydrateWallets(),
         hydrateBudgets(),
         hydrateNotifications(),
+        hydrateGoals(),
       ]);
     }
   }, [isAuthenticated]);
