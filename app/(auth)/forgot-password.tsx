@@ -8,6 +8,7 @@ import { Input } from '../../components/ui/Input';
 import { FontSize, Radius, Spacing } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuthStore } from '../../store/useAuthStore';
+import { AuthHeader } from '../../components/auth/AuthHeader';
 
 export default function ForgotPasswordScreen() {
   const { colors } = useTheme();
@@ -47,11 +48,11 @@ export default function ForgotPasswordScreen() {
           <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
             {!sent ? (
               <>
-                <LinearGradient colors={colors.gradient.card2} style={styles.iconBox} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-                  <Ionicons name="key" size={36} color="#fff" />
-                </LinearGradient>
-                <Text style={[styles.title, { color: colors.text }]}>Forgot Password?</Text>
-                <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Enter your email and we'll send you a reset link.</Text>
+                <AuthHeader 
+                  title="Forgot Password?" 
+                  subtitle="Enter your email and we'll send you a reset link to regain access"
+                  icon="key-outline"
+                />
                 <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
                   <Input label="Email Address" placeholder="you@example.com" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" leftIcon="mail-outline" error={emailError} />
                   <Button title={isLoading ? 'Sending...' : 'Send Reset Link'} onPress={handleSend} loading={isLoading} size="lg" />
@@ -59,14 +60,17 @@ export default function ForgotPasswordScreen() {
               </>
             ) : (
               <View style={styles.successContainer}>
-                <LinearGradient colors={colors.gradient.income} style={styles.successIcon} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-                  <Ionicons name="checkmark" size={44} color="#fff" />
-                </LinearGradient>
-                <Text style={[styles.title, { color: colors.text, textAlign: 'center' }]}>Email Sent!</Text>
-                <Text style={[styles.subtitle, { color: colors.textSecondary, textAlign: 'center' }]}>
-                  Reset instructions sent to{'\n'}<Text style={{ color: colors.primary, fontWeight: '700' }}>{email}</Text>
-                </Text>
-                <Button title="Back to Login" onPress={() => router.replace('/(auth)/login')} size="lg" style={{ marginTop: Spacing.xl }} />
+                <AuthHeader 
+                  title="Email Sent!" 
+                  subtitle={`Reset instructions sent to ${email}. Please check your inbox and spam folder.`}
+                  icon="checkmark-circle-outline"
+                />
+                <Button 
+                  title="Back to Login" 
+                  onPress={() => router.replace('/(auth)/login')} 
+                  size="lg" 
+                  style={{ marginTop: Spacing.xl, width: '100%' }} 
+                />
               </View>
             )}
           </Animated.View>
@@ -79,12 +83,9 @@ export default function ForgotPasswordScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   kav: { flex: 1 },
-  scroll: { flexGrow: 1, paddingHorizontal: Spacing.base, paddingTop: 50, paddingBottom: 40 },
+  scroll: { flexGrow: 1, paddingHorizontal: Spacing.base, paddingTop: 40, paddingBottom: 40 },
   orb: { position: 'absolute', width: 300, height: 300, borderRadius: 150, top: -100, right: -80, opacity: 0.6 },
   backBtn: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
-  iconBox: { width: 80, height: 80, borderRadius: 24, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.xl },
-  title: { fontSize: FontSize.xxxl, fontWeight: '800', marginBottom: Spacing.sm },
-  subtitle: { fontSize: FontSize.base, lineHeight: 24, marginBottom: Spacing.xl },
   card: { borderRadius: Radius.xxl, padding: Spacing.xl, borderWidth: 1 },
   successContainer: { alignItems: 'center', paddingTop: 40 },
   successIcon: { width: 100, height: 100, borderRadius: 50, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.xl },

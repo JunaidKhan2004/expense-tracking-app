@@ -16,6 +16,7 @@ import { Input } from '../../components/ui/Input';
 import { FontSize, Radius, Spacing } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuthStore } from '../../store/useAuthStore';
+import { AuthHeader } from '../../components/auth/AuthHeader';
 
 export default function SignupScreen() {
   const { colors } = useTheme();
@@ -70,20 +71,17 @@ export default function SignupScreen() {
             </TouchableOpacity>
           </Animated.View>
 
-          {/* Top Banner */}
-          <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-            <LinearGradient colors={colors.gradient.primary} style={styles.banner} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-              <Ionicons name="sparkles" size={32} color="#fff" />
-              <Text style={styles.bannerTitle}>Join FinVault</Text>
-              <Text style={styles.bannerSub}>Start your financial journey today</Text>
-            </LinearGradient>
-          </Animated.View>
+          {/* Auth Header */}
+          <AuthHeader 
+            title="Create Account" 
+            subtitle="Start your financial journey today and master your savings"
+            icon="person-add-outline"
+          />
 
           {/* Form Card */}
           <Animated.View
             style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}
           >
-            <Text style={[styles.title, { color: colors.text }]}>Create Account</Text>
 
             <Input label="Full Name" placeholder="John Doe" value={name} onChangeText={setName} leftIcon="person-outline" error={errors.name} autoCapitalize="words" />
             <Input label="Email Address" placeholder="you@example.com" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" leftIcon="mail-outline" error={errors.email} />
@@ -124,16 +122,12 @@ export default function SignupScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   kav: { flex: 1 },
-  scroll: { flexGrow: 1, paddingHorizontal: Spacing.base, paddingTop: 50, paddingBottom: 40 },
+  scroll: { flexGrow: 1, paddingHorizontal: Spacing.base, paddingTop: 40, paddingBottom: 40 },
   orb1: { position: 'absolute', width: 280, height: 280, borderRadius: 140, top: -60, right: -60, opacity: 0.5 },
   orb2: { position: 'absolute', width: 220, height: 220, borderRadius: 110, bottom: 80, left: -60, opacity: 0.5 },
   header: { marginBottom: 24 },
   backBtn: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
-  banner: { borderRadius: Radius.xxl, padding: Spacing.xl, alignItems: 'center', marginBottom: Spacing.xl, gap: 8 },
-  bannerTitle: { fontSize: FontSize.xxl, fontWeight: '800', color: '#fff' },
-  bannerSub: { fontSize: FontSize.sm, color: 'rgba(255,255,255,0.8)' },
   card: { borderRadius: Radius.xxl, padding: Spacing.xl, borderWidth: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.12, shadowRadius: 24, elevation: 8 },
-  title: { fontSize: FontSize.xl, fontWeight: '800', marginBottom: Spacing.lg },
   errorBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: Spacing.md, borderRadius: Radius.md, borderWidth: 1, marginBottom: Spacing.sm },
   errorText: { fontSize: FontSize.sm, fontWeight: '500', flex: 1 },
   terms: { fontSize: FontSize.xs, textAlign: 'center', lineHeight: 18, marginBottom: Spacing.base, marginTop: 4 },

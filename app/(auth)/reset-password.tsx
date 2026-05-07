@@ -9,6 +9,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import { AuthHeader } from '../../components/auth/AuthHeader';
 import { Spacing, FontSize } from '../../constants/theme';
 
 export default function ResetPasswordScreen() {
@@ -38,12 +39,11 @@ export default function ResetPasswordScreen() {
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.text }]}>New Password</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            Please enter your new password below.
-          </Text>
-        </View>
+        <AuthHeader 
+          title="New Password" 
+          subtitle="Please enter your new secure password below to update your account"
+          icon="lock-open-outline"
+        />
 
         <View style={styles.form}>
           <Input
@@ -51,16 +51,16 @@ export default function ResetPasswordScreen() {
             placeholder="Enter new password"
             value={password}
             onChangeText={setPassword}
-            secureTextEntry
-            icon="lock-closed-outline"
+            isPassword
+            leftIcon="lock-closed-outline"
           />
           <Input
             label="Confirm Password"
             placeholder="Confirm new password"
             value={confirmPassword}
             onChangeText={setConfirmPassword}
-            secureTextEntry
-            icon="lock-closed-outline"
+            isPassword
+            leftIcon="lock-closed-outline"
           />
 
           {error && <Text style={styles.errorText}>{error}</Text>}

@@ -19,6 +19,7 @@ import { FontSize, Radius, Spacing } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuthStore } from '../../store/useAuthStore';
 import { showToast } from '../../utils/toast';
+import { AuthHeader } from '../../components/auth/AuthHeader';
 
 const { width, height } = Dimensions.get('window');
 
@@ -88,14 +89,12 @@ export default function LoginScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Logo */}
-          <Animated.View style={[styles.logoSection, { opacity: fadeAnim, transform: [{ scale: logoScale }] }]}>
-            <LinearGradient colors={colors.gradient.primary} style={styles.logoBox} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-              <Ionicons name="wallet" size={36} color="#fff" />
-            </LinearGradient>
-            <Text style={[styles.appName, { color: colors.text }]}>FinVault</Text>
-            <Text style={[styles.tagline, { color: colors.textSecondary }]}>Your Smart Money Manager</Text>
-          </Animated.View>
+          {/* Auth Header */}
+          <AuthHeader 
+            title="Welcome Back" 
+            subtitle="Sign in to continue tracking your expenses and manage your wealth"
+            icon="log-in-outline"
+          />
 
           {/* Form Card */}
           <Animated.View
@@ -104,8 +103,6 @@ export default function LoginScreen() {
               { backgroundColor: colors.card, borderColor: colors.border, opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
             ]}
           >
-            <Text style={[styles.title, { color: colors.text }]}>Welcome Back</Text>
-            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Sign in to continue tracking your expenses</Text>
 
             <View style={styles.form}>
               <Input
@@ -176,25 +173,14 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   kav: { flex: 1 },
-  scroll: { flexGrow: 1, paddingHorizontal: Spacing.base, paddingTop: 60, paddingBottom: 40 },
+  scroll: { flexGrow: 1, paddingHorizontal: Spacing.base, paddingTop: 40, paddingBottom: 40 },
   orb1: { position: 'absolute', width: 300, height: 300, borderRadius: 150, top: -80, left: -80, opacity: 0.6 },
   orb2: { position: 'absolute', width: 250, height: 250, borderRadius: 125, bottom: 100, right: -80, opacity: 0.5 },
-  logoSection: { alignItems: 'center', marginBottom: 36 },
-  logoBox: {
-    width: 76, height: 76, borderRadius: 22,
-    alignItems: 'center', justifyContent: 'center',
-    marginBottom: 14,
-    shadowColor: '#7C6FFF', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 16, elevation: 10,
-  },
-  appName: { fontSize: FontSize.xxxl, fontWeight: '800', letterSpacing: 0.5 },
-  tagline: { fontSize: FontSize.sm, marginTop: 4, letterSpacing: 0.3 },
   card: {
     borderRadius: Radius.xxl, padding: Spacing.xl,
     borderWidth: 1,
     shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 24, elevation: 10,
   },
-  title: { fontSize: FontSize.xxl, fontWeight: '800', marginBottom: 6 },
-  subtitle: { fontSize: FontSize.sm, marginBottom: Spacing.xl, lineHeight: 20 },
   form: { gap: 4 },
   errorBanner: {
     flexDirection: 'row', alignItems: 'center', gap: 8,

@@ -114,20 +114,28 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       // Create a clean redirect URL for the build
-      const redirectUri = Linking.createURL('/');
-      console.log('Auth Redirect URI:', redirectUri);
+      // Force use of custom scheme
+      const redirectUri = Linking.createURL('/', { scheme: 'expensetrackingapp' });
+      // In some environments, createURL might still return exp://, so we can fallback:
+      const finalRedirectUri = redirectUri.startsWith('exp://') 
+        ? redirectUri.replace('exp://', 'expensetrackingapp://') 
+        : redirectUri;
+        
+      console.log('--- Auth Debug ---');
+      console.log('Final Redirect URI:', finalRedirectUri);
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: redirectUri,
+          redirectTo: finalRedirectUri,
           skipBrowserRedirect: true,
         },
       });
 
       if (error) throw error;
+      console.log('Supabase Auth URL:', data.url);
 
-      const res = await WebBrowser.openAuthSessionAsync(data.url, redirectUri);
+      const res = await WebBrowser.openAuthSessionAsync(data.url, finalRedirectUri);
 
       if (res.type === 'success' && res.url) {
         // Extract tokens from either the hash (#) or the query (?)
@@ -157,9 +165,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           set({ error: 'Authentication tokens not found. Please check your Supabase configuration.' });
         }
       } else if (res.type === 'cancel') {
-        console.log('User cancelled login');
+        console.log('Auth session cancelled by user');
       } else {
-        console.log('Auth session ended with type:', res.type);
+        console.log('Auth session ended. Type:', res.type);
       }
       
       set({ isLoading: false });

@@ -12,8 +12,8 @@ FinVault is a modern, premium Expense Tracking application built with **React Na
 - **Interactive Swipe Actions:** Effortlessly manage your finances with left-to-right swipe for **Editing** and right-to-left swipe for **Deletion** directly from any transaction list.
 - **Real-time Financial Sync:** Automatic wallet balance adjustments when adding, editing, or deleting transactions. Your net balance and category budgets stay perfectly in sync.
 - **Advanced Budgeting Engine:** Set category-wise monthly spending limits with real-time progress tracking and visual color alerts (Healthy vs. Over-budget) on the dashboard.
-- **Premium UI/UX:** A clean, professional interface featuring glassmorphism, linear gradients, dynamic profile stats, and smooth `Animated` transitions.
-- **Custom Branding & Splash Screen:** Fully theme-aware startup experience with animated logos (Light/Dark support) and a consistent Emerald Design System.
+- **Premium Auth Flow (New!):** A completely overhauled authentication experience featuring "Luxury Finance" aesthetics, floating 3D animations, glassmorphism logo containers, and smooth state transitions.
+- **Premium UI/UX:** A clean, professional interface featuring glassmorphism, linear gradients, dynamic profile stats, and smooth `Animated` transitions across all modules.
 - **Security & Privacy:** Dual-layer security with **Biometric Lock (FaceID/Fingerprint)** and **4-digit PIN fallback**.
 - **Data Export (Pro):** Generate professional **PDF Reports** with branding, or export raw data to **CSV** for detailed analysis.
 - **Smart Notifications Center:** Robust local notification system with budget threshold alerts and transaction confirmation (Optimized for SDK 53+).
@@ -90,6 +90,8 @@ Make sure you have Node.js installed. You will also need the **Expo Go** app on 
 - [x] PDF/CSV Reports
 - [x] Google OAuth Integration
 - [x] Financial Goals (Savings Tracking)
+- [x] Luxury Finance UI (Auth Overhaul)
+- [x] Password Visibility (Eye Toggle)
 - [ ] Subscription & Bill Manager - *Planned*
 - [ ] Advanced AI Spending Forecast - *Under Development*
 - [ ] Cloud Backup (Auto-sync) - *Planned*

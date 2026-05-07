@@ -9,6 +9,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Button } from '../../components/ui/Button';
+import { AuthHeader } from '../../components/auth/AuthHeader';
 import { Spacing, FontSize, Radius } from '../../constants/theme';
 
 export default function VerifyScreen() {
@@ -50,7 +51,7 @@ export default function VerifyScreen() {
     const success = await verifyOtp(tempEmail, otp, type);
     if (success) {
       if (type === 'signup') {
-        router.replace('/(tabs)/index');
+        router.replace('/(tabs)');
       } else {
         router.replace('/(auth)/reset-password');
       }
@@ -72,18 +73,17 @@ export default function VerifyScreen() {
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
 
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.text }]}>Verify Email</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            We've sent a 6-digit verification code to {tempEmail}
-          </Text>
-        </View>
+        <AuthHeader 
+          title="Verify Email" 
+          subtitle={`We've sent a 6-digit verification code to ${tempEmail}`}
+          icon="shield-checkmark-outline"
+        />
 
         <View style={styles.otpContainer}>
           {code.map((digit, index) => (
             <TextInput
               key={index}
-              ref={(ref) => (inputs.current[index] = ref)}
+              ref={(ref) => { inputs.current[index] = ref; }}
               style={[
                 styles.otpInput,
                 {
