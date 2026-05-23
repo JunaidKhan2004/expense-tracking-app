@@ -41,14 +41,16 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      // Hydrate data stores when user is authenticated
-      Promise.all([
-        hydrateTransactions(),
-        hydrateWallets(),
-        hydrateBudgets(),
-        hydrateNotifications(),
-        hydrateGoals(),
-      ]);
+      // Hydrate settings first to get the correct user currency, then hydrate other stores
+      hydrateSettings().then(() => {
+        Promise.all([
+          hydrateTransactions(),
+          hydrateWallets(),
+          hydrateBudgets(),
+          hydrateNotifications(),
+          hydrateGoals(),
+        ]);
+      });
     }
   }, [isAuthenticated]);
 

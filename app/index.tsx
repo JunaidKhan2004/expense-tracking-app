@@ -1,22 +1,22 @@
-import { Redirect } from 'expo-router';
-import { useAuthStore } from '../store/useAuthStore';
-import { View, Text, StyleSheet, Dimensions, Image } from 'react-native';
-import { useTheme } from '../hooks/useTheme';
-import { useEffect, useState } from 'react';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withTiming, 
-  withRepeat, 
-  withSequence,
-  withDelay,
-  Easing,
-  FadeIn
-} from 'react-native-reanimated';
-import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Radius, FontSize, FontWeight } from '../constants/theme';
+import { Redirect } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
+import { useEffect, useState } from 'react';
+import { Dimensions, Image, StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  Easing,
+  FadeIn,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withRepeat,
+  withSequence,
+  withTiming
+} from 'react-native-reanimated';
+import { FontSize, FontWeight } from '../constants/theme';
+import { useTheme } from '../hooks/useTheme';
+import { useAuthStore } from '../store/useAuthStore';
 
 const { width } = Dimensions.get('window');
 
@@ -39,7 +39,7 @@ export default function Index() {
     // Start animations
     logoScale.value = withTiming(1, { duration: 1000, easing: Easing.out(Easing.back(1.5)) });
     logoOpacity.value = withTiming(1, { duration: 800 });
-    
+
     textOpacity.value = withDelay(500, withTiming(1, { duration: 800 }));
     textTranslateY.value = withDelay(500, withTiming(0, { duration: 800, easing: Easing.out(Easing.exp) }));
 
@@ -81,31 +81,30 @@ export default function Index() {
         colors={isDark ? ['#091413', '#122625'] : ['#F0F8F6', '#E1F2ED']}
         style={StyleSheet.absoluteFill}
       />
-      
+
       <View style={styles.content}>
-        <Animated.View style={[styles.logoContainer, logoStyle, { backgroundColor: colors.primaryGlow }]}>
-          <Image 
-            source={isDark ? require('../assets/images/finVaultAppLogoDark.png') : require('../assets/images/finVaultAppLogoLight.png')}
-            style={{ width: 80, height: 80, resizeMode: 'contain' }}
+        <Animated.View style={[styles.logoContainer, logoStyle,]}>
+          <Image
+            source={isDark ? require('../assets/images/splashLogo.png') : require('../assets/images/splashLogo.png')}
+            style={{ width: 100, height: 100, resizeMode: 'contain' }}
           />
         </Animated.View>
-
+        {/* 
         <Animated.View style={[styles.textContainer, textStyle]}>
-          <Text style={[styles.title, { color: colors.text }]}>FinVault</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Smart Expense Tracker</Text>
-        </Animated.View>
+        </Animated.View> */}
       </View>
 
-      <Animated.View 
+      <Animated.View
         entering={FadeIn.delay(1500)}
         style={styles.footer}
       >
         <View style={[styles.loadingBar, { backgroundColor: colors.borderLight }]}>
-          <Animated.View 
+          <Animated.View
             style={[
-              styles.loadingProgress, 
+              styles.loadingProgress,
               { backgroundColor: colors.primary, width: '40%' }
-            ]} 
+            ]}
           />
         </View>
         <Text style={[styles.footerText, { color: colors.textMuted }]}>
