@@ -1,4 +1,4 @@
-// ─── FinVault Design System ───────────────────────────────────────────────────
+// ─── Spendly Design System ────────────────────────────────────────────────────
 
 export const Colors = {
   dark: {

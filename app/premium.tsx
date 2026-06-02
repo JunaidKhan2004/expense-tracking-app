@@ -56,7 +56,7 @@ export default function PremiumScreen() {
       <Stack.Screen 
         options={{
           headerShown: true,
-          headerTitle: 'FinVault Premium',
+          headerTitle: 'Spendly Premium',
           headerTransparent: true,
           headerTintColor: colors.text,
           headerLeft: () => (
@@ -79,7 +79,7 @@ export default function PremiumScreen() {
         >
           <Ionicons name="star" size={60} color="#FFB830" />
           <Text style={styles.heroTitle}>Level Up Your Finances</Text>
-          <Text style={styles.heroSub}>Unlock the full power of FinVault and take control of your future.</Text>
+          <Text style={styles.heroSub}>Unlock the full power of Spendly and take control of your future.</Text>
         </LinearGradient>
 
         {/* Features List */}

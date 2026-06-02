@@ -301,8 +301,8 @@ export default function SettingsScreen() {
             onPress={async () => {
               const { useNotificationStore } = await import('../../store/useNotificationStore');
               const { sendLocalNotification } = await import('../../utils/notifications');
-              await sendLocalNotification('FinVault Test 🚀', 'If you see this, notifications are working!');
-              await useNotificationStore.getState().addNotification('FinVault Test 🚀', 'If you see this, notifications are working!', 'system');
+              await sendLocalNotification('Spendly Test 🚀', 'If you see this, notifications are working!');
+              await useNotificationStore.getState().addNotification('Spendly Test 🚀', 'If you see this, notifications are working!', 'system');
             }}
           /> */}
           <SettingRow
@@ -452,7 +452,7 @@ export default function SettingsScreen() {
           <Text style={[styles.logoutText, { color: colors.danger }]}>Sign Out</Text>
         </TouchableOpacity>
 
-        <Text style={[styles.version, { color: colors.textMuted }]}>FinVault v1.0.0 · Built by <Text style={{ fontWeight: 'bold' }}>Junaid Dev</Text></Text>
+        <Text style={[styles.version, { color: colors.textMuted }]}>Spendly v1.0.0 · Built by <Text style={{ fontWeight: 'bold' }}>Junaid Dev</Text></Text>
         <View style={{ height: 100 }} />
       </ScrollView>
 

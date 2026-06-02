@@ -1,11 +1,11 @@
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, Text, View, Dimensions, Platform } from 'react-native';
-import { FontSize, FontWeight, Radius, Spacing } from '../../constants/theme';
-import { useTheme } from '../../hooks/useTheme';
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import React, { useEffect, useRef } from "react";
+import { Animated, Dimensions, StyleSheet, Text, View } from "react-native";
+import { FontSize, FontWeight, Spacing } from "../../constants/theme";
+import { useTheme } from "../../hooks/useTheme";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 interface AuthHeaderProps {
   title: string;
@@ -13,13 +13,13 @@ interface AuthHeaderProps {
   icon?: keyof typeof Ionicons.glyphMap;
 }
 
-export const AuthHeader: React.FC<AuthHeaderProps> = ({ 
-  title, 
-  subtitle, 
-  icon = "wallet-outline" 
+export const AuthHeader: React.FC<AuthHeaderProps> = ({
+  title,
+  subtitle,
+  icon = "wallet-outline",
 }) => {
   const { colors, isDark } = useTheme();
-  
+
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(40)).current;
   const logoScale = useRef(new Animated.Value(0.5)).current;
@@ -27,16 +27,38 @@ export const AuthHeader: React.FC<AuthHeaderProps> = ({
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
-      Animated.spring(slideAnim, { toValue: 0, tension: 40, friction: 8, useNativeDriver: true }),
-      Animated.spring(logoScale, { toValue: 1, tension: 35, friction: 6, useNativeDriver: true }),
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        tension: 40,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+      Animated.spring(logoScale, {
+        toValue: 1,
+        tension: 35,
+        friction: 6,
+        useNativeDriver: true,
+      }),
     ]).start();
 
     Animated.loop(
       Animated.sequence([
-        Animated.timing(floatAnim, { toValue: 1, duration: 2500, useNativeDriver: true }),
-        Animated.timing(floatAnim, { toValue: 0, duration: 2500, useNativeDriver: true }),
-      ])
+        Animated.timing(floatAnim, {
+          toValue: 1,
+          duration: 2500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatAnim, {
+          toValue: 0,
+          duration: 2500,
+          useNativeDriver: true,
+        }),
+      ]),
     ).start();
   }, []);
 
@@ -48,39 +70,77 @@ export const AuthHeader: React.FC<AuthHeaderProps> = ({
   return (
     <View style={styles.container}>
       {/* Decorative Blur Elements */}
-      <View style={[styles.blurCircle, { backgroundColor: colors.primary, top: -20, left: width * 0.1, opacity: 0.15 }]} />
-      <View style={[styles.blurCircle, { backgroundColor: colors.secondary, top: 40, right: width * 0.05, opacity: 0.1 }]} />
-
-      <Animated.View 
+      <View
         style={[
-          styles.content, 
-          { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }
+          styles.blurCircle,
+          {
+            backgroundColor: colors.primary,
+            top: -20,
+            left: width * 0.1,
+            opacity: 0.15,
+          },
+        ]}
+      />
+      <View
+        style={[
+          styles.blurCircle,
+          {
+            backgroundColor: colors.secondary,
+            top: 40,
+            right: width * 0.05,
+            opacity: 0.1,
+          },
+        ]}
+      />
+
+      <Animated.View
+        style={[
+          styles.content,
+          { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
         ]}
       >
         {/* Animated Logo */}
-        <Animated.View style={{ transform: [{ scale: logoScale }, { translateY }] }}>
+        <Animated.View
+          style={{ transform: [{ scale: logoScale }, { translateY }] }}
+        >
           <LinearGradient
             colors={colors.gradient.primary}
             style={styles.logoContainer}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           >
-            <View style={[styles.logoGlass, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.2)' }]}>
-               <Ionicons name={icon} size={44} color="#fff" />
+            <View
+              style={[
+                styles.logoGlass,
+                {
+                  backgroundColor: isDark
+                    ? "rgba(255,255,255,0.08)"
+                    : "rgba(255,255,255,0.2)",
+                },
+              ]}
+            >
+              <Ionicons name={icon} size={44} color="#fff" />
             </View>
           </LinearGradient>
-          
+
           {/* Subtle Glow beneath logo */}
-          <View style={[styles.logoGlow, { backgroundColor: colors.primary, opacity: 0.4 }]} />
+          <View
+            style={[
+              styles.logoGlow,
+              { backgroundColor: colors.primary, opacity: 0.4 },
+            ]}
+          />
         </Animated.View>
 
         <View style={styles.textSection}>
-          <Text style={[styles.brandName, { color: colors.primary }]}>FINVAULT</Text>
+          {/* <Text style={[styles.brandName, { color: colors.primary }]}>SPENDLY</Text> */}
           <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
-          
+
           <View style={styles.subtitleContainer}>
             <View style={[styles.line, { backgroundColor: colors.border }]} />
-            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{subtitle}</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+              {subtitle}
+            </Text>
             <View style={[styles.line, { backgroundColor: colors.border }]} />
           </View>
         </View>
@@ -91,30 +151,30 @@ export const AuthHeader: React.FC<AuthHeaderProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
-    width: '100%',
+    alignItems: "center",
+    width: "100%",
     paddingTop: 30,
     marginBottom: Spacing.xl,
-    overflow: 'visible',
+    overflow: "visible",
   },
   blurCircle: {
-    position: 'absolute',
+    position: "absolute",
     width: 180,
     height: 180,
     borderRadius: 90,
   },
   content: {
-    alignItems: 'center',
-    width: '100%',
+    alignItems: "center",
+    width: "100%",
   },
   logoContainer: {
     width: 100,
     height: 100,
     borderRadius: 35,
     padding: 3,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 15 },
     shadowOpacity: 0.3,
     shadowRadius: 20,
@@ -122,25 +182,25 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   logoGlass: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
     borderRadius: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    borderColor: "rgba(255,255,255,0.2)",
   },
   logoGlow: {
-    position: 'absolute',
+    position: "absolute",
     width: 60,
     height: 60,
     borderRadius: 30,
     bottom: -10,
-    alignSelf: 'center',
+    alignSelf: "center",
     zIndex: 1,
   },
   textSection: {
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: Spacing.xl,
     paddingHorizontal: Spacing.xl,
   },
@@ -149,21 +209,21 @@ const styles = StyleSheet.create({
     fontWeight: FontWeight.black,
     letterSpacing: 6,
     marginBottom: Spacing.sm,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
   },
   title: {
     fontSize: 40,
     fontWeight: FontWeight.black,
-    textAlign: 'center',
+    textAlign: "center",
     letterSpacing: -1,
     lineHeight: 46,
     marginBottom: Spacing.md,
   },
   subtitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
-    paddingHorizontal: Spacing.base,
+    paddingHorizontal: Spacing.xs,
   },
   line: {
     height: 1,
@@ -173,8 +233,8 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: FontSize.md,
     fontWeight: FontWeight.medium,
-    textAlign: 'center',
-    maxWidth: '75%',
+    textAlign: "center",
+    maxWidth: "75%",
     lineHeight: 22,
   },
 });

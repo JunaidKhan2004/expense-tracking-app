@@ -1,17 +1,17 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const KEYS = {
-  USER: '@finvault:user',
-  TRANSACTIONS: '@finvault:transactions',
-  WALLETS: '@finvault:wallets',
-  CATEGORIES: '@finvault:categories',
-  SETTINGS: '@finvault:settings',
-  BUDGETS: '@finvault:budgets',
-  GOALS: '@finvault:goals',
-  ACHIEVEMENTS: '@finvault:achievements',
-  AUTH_TOKEN: '@finvault:auth_token',
-  IS_ONBOARDED: '@finvault:onboarded',
-  NOTIFICATIONS: '@finvault:notifications_history',
+  USER: '@spendly:user',
+  TRANSACTIONS: '@spendly:transactions',
+  WALLETS: '@spendly:wallets',
+  CATEGORIES: '@spendly:categories',
+  SETTINGS: '@spendly:settings',
+  BUDGETS: '@spendly:budgets',
+  GOALS: '@spendly:goals',
+  ACHIEVEMENTS: '@spendly:achievements',
+  AUTH_TOKEN: '@spendly:auth_token',
+  IS_ONBOARDED: '@spendly:onboarded',
+  NOTIFICATIONS: '@spendly:notifications_history',
 };
 
 async function getItem<T>(key: string): Promise<T | null> {

@@ -1,8 +1,10 @@
 import { create } from 'zustand';
 import { DEFAULT_CATEGORIES } from '../constants/categories';
 import { supabase } from '../lib/supabase';
+import { retryWithBackoff } from '../utils/retryWithBackoff';
 import { Category, FilterPeriod, Transaction } from '../types';
 import { filterTransactionsByPeriod } from '../utils/formatters';
+import { storeEvents } from './storeEvents';
 
 interface TransactionState {
   transactions: Transaction[];
@@ -10,6 +12,7 @@ interface TransactionState {
   filterPeriod: FilterPeriod;
   searchQuery: string;
   isLoading: boolean;
+  error: string | null;
 
   // Computed
   filteredTransactions: () => Transaction[];
@@ -27,9 +30,9 @@ interface TransactionState {
   addCategory: (cat: Omit<Category, 'id' | 'isCustom'>) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
   convertAllTransactions: (rate: number) => Promise<void>;
+  clearError: () => void;
 }
 
-// Helper to map DB row to App object
 const mapTxFromDB = (dbTx: any): Transaction => ({
   id: dbTx.id,
   type: dbTx.type,
@@ -44,7 +47,6 @@ const mapTxFromDB = (dbTx: any): Transaction => ({
   createdAt: dbTx.created_at,
 });
 
-// Helper to map App object to DB row
 const mapTxToDB = (tx: any) => ({
   type: tx.type,
   amount: tx.amount,
@@ -63,6 +65,7 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
   filterPeriod: 'month',
   searchQuery: '',
   isLoading: false,
+  error: null,
 
   filteredTransactions: () => {
     const { transactions, filterPeriod, searchQuery } = get();
@@ -94,14 +97,18 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
   netBalance: () => get().totalIncome() - get().totalExpenses(),
 
   hydrate: async () => {
-    set({ isLoading: true });
+    set({ isLoading: true, error: null });
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
       const [txResult, catResult] = await Promise.all([
-        supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false }),
-        supabase.from('categories').select('*').eq('user_id', user.id),
+        retryWithBackoff(() =>
+          supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false })
+        ),
+        retryWithBackoff(() =>
+          supabase.from('categories').select('*').eq('user_id', user.id)
+        ),
       ]);
 
       set({
@@ -118,7 +125,9 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
           })),
         ],
       });
-    } catch (err) {
+    } catch (err: any) {
+      const msg = err?.message ?? 'Failed to load transactions';
+      set({ error: msg });
       console.error('Hydrate transactions error:', err);
     } finally {
       set({ isLoading: false });
@@ -126,186 +135,161 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
   },
 
   addTransaction: async (data) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    set({ error: null });
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
 
-    const dbData = {
-      ...mapTxToDB(data),
-      user_id: user.id,
-    };
+      const dbData = { ...mapTxToDB(data), user_id: user.id };
 
-    const { data: newTx, error } = await supabase
-      .from('transactions')
-      .insert([dbData])
-      .select()
-      .single();
+      const { data: newTx, error } = await retryWithBackoff(() =>
+        supabase.from('transactions').insert([dbData]).select().single()
+      );
 
-    if (error) {
-      console.error('Add transaction error:', error);
-      return;
-    }
+      if (error) throw error;
 
-    if (newTx) {
-      const tx = mapTxFromDB(newTx);
-      set({ transactions: [tx, ...get().transactions] });
+      if (newTx) {
+        const tx = mapTxFromDB(newTx);
+        set({ transactions: [tx, ...get().transactions] });
 
-      // Notifications logic
-      const { getBudgetsWithProgress } = (await import('./useBudgetStore')).useBudgetStore.getState();
-      const { addNotification } = (await import('./useNotificationStore')).useNotificationStore.getState();
-      const { sendLocalNotification } = await import('../utils/notifications');
-      const { settings } = (await import('./useSettingsStore')).useSettingsStore.getState();
-
-      if (settings.notificationsEnabled) {
-        // 1. General Transaction Notification
-        const txTitle = tx.type === 'income' ? 'Income Received!' : 'Expense Tracked';
-        const txBody = `${tx.title}: ${tx.amount}`;
-        await sendLocalNotification(txTitle, txBody);
-        await addNotification(txTitle, txBody, 'transaction');
-
-        // 2. Budget Alerts (Only for Expenses)
-        if (tx.type === 'expense' && settings.budgetAlerts) {
-          const budget = getBudgetsWithProgress().find(b => b.categoryId === tx.categoryId);
-          if (budget) {
-            if (budget.percentage >= 100) {
-              const title = 'Budget Exceeded!';
-              const body = `You've spent ${Math.round(budget.percentage)}% of your budget for this category.`;
-              await sendLocalNotification(title, body);
-              await addNotification(title, body, 'budget');
-            } else if (budget.percentage >= 80) {
-              const title = 'Budget Alert';
-              const body = `You've used ${Math.round(budget.percentage)}% of your budget for this category.`;
-              await sendLocalNotification(title, body);
-              await addNotification(title, body, 'budget');
-            }
-          }
-        }
+        // Notify other stores via event bus — no dynamic imports needed
+        storeEvents.emit('transaction:added', tx);
       }
+    } catch (err: any) {
+      const msg = err?.message ?? 'Failed to add transaction';
+      set({ error: msg });
+      console.error('Add transaction error:', err);
     }
   },
 
   updateTransaction: async (id, data) => {
-    const dbData = mapTxToDB(data);
-    const { error } = await supabase
-      .from('transactions')
-      .update(dbData)
-      .eq('id', id);
+    set({ error: null });
+    try {
+      const dbData = mapTxToDB(data);
+      const { error } = await retryWithBackoff(() =>
+        supabase.from('transactions').update(dbData).eq('id', id)
+      );
 
-    if (error) {
-      console.error('Update transaction error:', error);
-      return;
+      if (error) throw error;
+
+      set({
+        transactions: get().transactions.map((t) => (t.id === id ? { ...t, ...data } : t)),
+      });
+    } catch (err: any) {
+      const msg = err?.message ?? 'Failed to update transaction';
+      set({ error: msg });
+      console.error('Update transaction error:', err);
     }
-
-    set({
-      transactions: get().transactions.map((t) => (t.id === id ? { ...t, ...data } : t)),
-    });
   },
 
   deleteTransaction: async (id) => {
-    const transaction = get().transactions.find(t => t.id === id);
+    set({ error: null });
+    const transaction = get().transactions.find((t) => t.id === id);
     if (!transaction) return;
 
-    const { error } = await supabase.from('transactions').delete().eq('id', id);
+    try {
+      const { error } = await retryWithBackoff(() =>
+        supabase.from('transactions').delete().eq('id', id)
+      );
 
-    if (error) {
-      console.error('Delete transaction error:', error);
-      return;
+      if (error) throw error;
+
+      set({ transactions: get().transactions.filter((t) => t.id !== id) });
+
+      // Emit event so wallet store can reverse the balance — no dynamic import
+      storeEvents.emit('transaction:deleted', {
+        id,
+        walletId: transaction.walletId,
+        amount: transaction.amount,
+        type: transaction.type,
+      });
+    } catch (err: any) {
+      const msg = err?.message ?? 'Failed to delete transaction';
+      set({ error: msg });
+      console.error('Delete transaction error:', err);
     }
-
-    // Reverse balance adjustment
-    const { adjustBalance } = (await import('./useWalletStore')).useWalletStore.getState();
-    const reverseType = transaction.type === 'income' ? 'expense' : 'income';
-    await adjustBalance(transaction.walletId, transaction.amount, reverseType);
-
-    set({
-      transactions: get().transactions.filter((t) => t.id !== id),
-    });
   },
 
   setFilterPeriod: (period) => set({ filterPeriod: period }),
   setSearchQuery: (q) => set({ searchQuery: q }),
 
   addCategory: async (cat) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    set({ error: null });
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
 
-    const { data: newCat, error } = await supabase
-      .from('categories')
-      .insert([
-        {
-          name: cat.name,
-          icon: cat.icon,
-          color: cat.color,
-          type: cat.type,
-          user_id: user.id,
-          is_custom: true,
-        },
-      ])
-      .select()
-      .single();
+      const { data: newCat, error } = await retryWithBackoff(() =>
+        supabase
+          .from('categories')
+          .insert([{ name: cat.name, icon: cat.icon, color: cat.color, type: cat.type, user_id: user.id, is_custom: true }])
+          .select()
+          .single()
+      );
 
-    if (error) {
-      console.error('Add category error:', error);
-      return;
-    }
+      if (error) throw error;
 
-    if (newCat) {
-      set({
-        categories: [
-          ...get().categories,
-          {
-            id: newCat.id,
-            name: newCat.name,
-            icon: newCat.icon,
-            color: newCat.color,
-            type: newCat.type,
-            isCustom: newCat.is_custom,
-          },
-        ],
-      });
+      if (newCat) {
+        set({
+          categories: [
+            ...get().categories,
+            { id: newCat.id, name: newCat.name, icon: newCat.icon, color: newCat.color, type: newCat.type, isCustom: newCat.is_custom },
+          ],
+        });
+      }
+    } catch (err: any) {
+      const msg = err?.message ?? 'Failed to add category';
+      set({ error: msg });
+      console.error('Add category error:', err);
     }
   },
 
   deleteCategory: async (id) => {
-    const { error } = await supabase.from('categories').delete().eq('id', id);
+    set({ error: null });
+    try {
+      const { error } = await retryWithBackoff(() =>
+        supabase.from('categories').delete().eq('id', id)
+      );
 
-    if (error) {
-      console.error('Delete category error:', error);
-      return;
+      if (error) throw error;
+
+      set({ categories: get().categories.filter((c) => c.id !== id) });
+    } catch (err: any) {
+      const msg = err?.message ?? 'Failed to delete category';
+      set({ error: msg });
+      console.error('Delete category error:', err);
     }
-
-    set({
-      categories: get().categories.filter((c) => c.id !== id),
-    });
   },
 
   convertAllTransactions: async (rate) => {
-    set({ isLoading: true });
+    set({ isLoading: true, error: null });
     try {
-      const updatedTransactions = get().transactions.map(t => ({
+      const updatedTransactions = get().transactions.map((t) => ({
         ...t,
-        amount: Number((t.amount * rate).toFixed(2))
+        amount: Number((t.amount * rate).toFixed(2)),
       }));
 
-      // Update state
       set({ transactions: updatedTransactions });
 
-      // Update in Supabase (Batch update is not directly supported via Supabase Client easily, 
-      // but we can loop or use a custom function. For now, we'll use a loop or assume users don't have thousands yet)
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // This is a bit slow but safe for now. 
-        // A better way would be an RPC call: select convert_all_transactions(rate, user_id)
-        for (const t of updatedTransactions) {
-          await supabase
-            .from('transactions')
-            .update({ amount: t.amount })
-            .eq('id', t.id);
-        }
+        // Run all updates in parallel instead of sequentially
+        await Promise.all(
+          updatedTransactions.map((t) =>
+            retryWithBackoff(() =>
+              supabase.from('transactions').update({ amount: t.amount }).eq('id', t.id)
+            )
+          )
+        );
       }
-    } catch (err) {
+    } catch (err: any) {
+      const msg = err?.message ?? 'Currency conversion failed';
+      set({ error: msg });
       console.error('Convert transactions error:', err);
     } finally {
       set({ isLoading: false });
     }
-  }
+  },
+
+  clearError: () => set({ error: null }),
 }));

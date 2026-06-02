@@ -38,26 +38,26 @@ export default function TermsScreen() {
         
         <View style={[styles.headerCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Ionicons name="document-text" size={40} color={colors.primary} />
-          <Text style={[styles.headerTitle, { color: colors.text }]}>FinVault Terms</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Spendly Terms</Text>
           <Text style={[styles.headerSub, { color: colors.textSecondary }]}>Last Updated: April 2024</Text>
         </View>
 
         <TermSection 
           colors={colors}
           title="1. Acceptance of Terms"
-          content="By accessing and using FinVault, you agree to be bound by these Terms of Service and all applicable laws and regulations. If you do not agree with any of these terms, you are prohibited from using or accessing this application."
+          content="By accessing and using Spendly, you agree to be bound by these Terms of Service and all applicable laws and regulations. If you do not agree with any of these terms, you are prohibited from using or accessing this application."
         />
 
         <TermSection 
           colors={colors}
           title="2. Use License"
-          content="Permission is granted to temporarily download one copy of the materials (information or software) on FinVault's application for personal, non-commercial transitory viewing only."
+          content="Permission is granted to temporarily download one copy of the materials (information or software) on Spendly's application for personal, non-commercial transitory viewing only."
         />
 
         <TermSection 
           colors={colors}
           title="3. Data Privacy"
-          content="Your financial data is yours. FinVault uses Supabase for secure data storage. While we implement industry-standard security measures, we cannot guarantee absolute security of data transmitted over the internet."
+          content="Your financial data is yours. Spendly uses Supabase for secure data storage. While we implement industry-standard security measures, we cannot guarantee absolute security of data transmitted over the internet."
         />
 
         <TermSection 
@@ -69,18 +69,18 @@ export default function TermsScreen() {
         <TermSection 
           colors={colors}
           title="5. Disclaimer"
-          content="The materials on FinVault's application are provided on an 'as is' basis. FinVault makes no warranties, expressed or implied, and hereby disclaims and negates all other warranties including, without limitation, implied warranties or conditions of merchantability."
+          content="The materials on Spendly's application are provided on an 'as is' basis. Spendly makes no warranties, expressed or implied, and hereby disclaims and negates all other warranties including, without limitation, implied warranties or conditions of merchantability."
         />
 
         <TermSection 
           colors={colors}
           title="6. Limitations"
-          content="In no event shall FinVault or its suppliers be liable for any damages (including, without limitation, damages for loss of data or profit, or due to business interruption) arising out of the use or inability to use the materials on FinVault's application."
+          content="In no event shall Spendly or its suppliers be liable for any damages (including, without limitation, damages for loss of data or profit, or due to business interruption) arising out of the use or inability to use the materials on Spendly's application."
         />
 
         <View style={styles.footer}>
           <Text style={[styles.footerText, { color: colors.textMuted }]}>
-            Questions about our terms? Contact us at legal@finvault.com
+            Questions about our terms? Contact us at legal@spendly.app
           </Text>
         </View>
 

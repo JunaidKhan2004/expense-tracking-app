@@ -23,7 +23,7 @@ export default function SupportScreen() {
     // Simulate API call
     setTimeout(() => {
       setIsSubmitting(false);
-      showToast.success('Feedback Sent', 'Thank you for helping us improve FinVault!');
+      showToast.success('Feedback Sent', 'Thank you for helping us improve Spendly!');
       setSubject('');
       setMessage('');
       if (router.canGoBack()) {
@@ -35,7 +35,7 @@ export default function SupportScreen() {
   };
 
   const handleEmailSupport = async () => {
-    const url = 'mailto:support@finvault.com?subject=Support Request';
+    const url = 'mailto:support@spendly.app?subject=Support Request';
     if (await Linking.canOpenURL(url)) {
       await Linking.openURL(url);
     } else {
@@ -44,7 +44,7 @@ export default function SupportScreen() {
   };
 
   const handleOpenFAQ = async () => {
-    const url = 'https://finvault.com/faq';
+    const url = 'https://spendly.app/faq';
     try {
       if (await Linking.canOpenURL(url)) {
         await Linking.openURL(url);
@@ -83,7 +83,7 @@ export default function SupportScreen() {
               <Ionicons name="mail" size={20} color="#fff" />
             </LinearGradient>
             <Text style={[styles.optionLabel, { color: colors.text }]}>Email Us</Text>
-            <Text style={[styles.optionSub, { color: colors.textSecondary }]}>support@finvault.com</Text>
+            <Text style={[styles.optionSub, { color: colors.textSecondary }]}>support@spendly.app</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={[styles.optionCard, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={handleOpenFAQ}>

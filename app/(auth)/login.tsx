@@ -59,7 +59,7 @@ export default function LoginScreen() {
     if (!validate()) return;
     const success = await login(email.trim(), password);
     if (success) {
-      showToast.success('Login Successful', `Welcome back to FinVault!`);
+      showToast.success('Login Successful', `Welcome back to Spendly!`);
       router.replace('/(tabs)');
     } else {
       showToast.error('Login Failed', 'Invalid email or password');
@@ -69,7 +69,7 @@ export default function LoginScreen() {
   const handleGoogleLogin = async () => {
     const success = await signInWithGoogle();
     if (success) {
-      showToast.success('Login Successful', `Welcome to FinVault!`);
+      showToast.success('Login Successful', `Welcome to Spendly!`);
       router.replace('/(tabs)');
     }
   };

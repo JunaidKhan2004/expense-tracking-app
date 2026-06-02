@@ -1,6 +1,7 @@
 import * as LocalAuthentication from 'expo-local-authentication';
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
+import { retryWithBackoff } from '../utils/retryWithBackoff';
 import { AppSettings, ThemeMode } from '../types';
 import { getExchangeRates } from '../utils/currencyConverter';
 import { Storage } from '../utils/storage';
@@ -46,11 +47,9 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('currency')
-          .eq('id', user.id)
-          .single();
+        const { data: profile } = await retryWithBackoff(() =>
+          supabase.from('profiles').select('currency').eq('id', user.id).single()
+        );
         
         if (profile) {
           const updated = { 
@@ -104,10 +103,9 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        await supabase
-          .from('profiles')
-          .update({ currency: newCurrency })
-          .eq('id', user.id);
+        await retryWithBackoff(() =>
+          supabase.from('profiles').update({ currency: newCurrency }).eq('id', user.id)
+        );
       }
     } catch (err) {
       console.error('Currency conversion error:', err);

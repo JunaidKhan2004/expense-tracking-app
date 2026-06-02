@@ -1,6 +1,17 @@
 import { Transaction, Category } from '../types';
 import { startOfWeek, endOfWeek, subWeeks, isWithinInterval, parseISO } from 'date-fns';
 
+const INSIGHT_THRESHOLDS = {
+  /** % increase week-over-week that qualifies as a spending spike */
+  SPENDING_SPIKE_MIN_INCREASE: 0,
+  /** Fraction of weekly spend that dining must exceed to trigger an alert */
+  DINING_ALERT_FRACTION: 0.4,
+  /** Number of recurring transactions that triggers subscription fatigue warning */
+  SUBSCRIPTION_FATIGUE_COUNT: 5,
+  /** Safe investment suggestion as a fraction of idle cash */
+  SAFE_INVEST_FRACTION: 0.1,
+} as const;
+
 export interface AIInsight {
   title: string;
   description: string;
@@ -57,7 +68,7 @@ export function generateAIInsights(transactions: Transaction[], categories: Cate
       .filter(t => t.categoryId === diningCat.id && isWithinInterval(parseISO(t.date), thisWeek))
       .reduce((sum, t) => sum + t.amount, 0);
     
-    if (diningSpend > currentWeekExpenses * 0.4) {
+    if (diningSpend > currentWeekExpenses * INSIGHT_THRESHOLDS.DINING_ALERT_FRACTION) {
       insights.push({
         title: 'Dining Alert',
         description: 'Dining out accounts for over 40% of this week\'s spend. Small cuts here can lead to big savings.',
@@ -69,7 +80,7 @@ export function generateAIInsights(transactions: Transaction[], categories: Cate
 
   // 3. Subscription Check
   const recurringCount = transactions.filter(t => t.isRecurring).length;
-  if (recurringCount > 5) {
+  if (recurringCount > INSIGHT_THRESHOLDS.SUBSCRIPTION_FATIGUE_COUNT) {
     insights.push({
       title: 'Subscription Fatigue',
       description: `You have ${recurringCount} active recurring payments. Review them to ensure you still use all services.`,
@@ -82,7 +93,7 @@ export function generateAIInsights(transactions: Transaction[], categories: Cate
   if (insights.length < 2) {
     insights.push({
       title: 'Safe to Invest',
-      description: 'Based on your current balance and bills, you can safely invest 10% of your idle cash.',
+      description: `Based on your current balance and bills, you can safely invest ${INSIGHT_THRESHOLDS.SAFE_INVEST_FRACTION * 100}% of your idle cash.`,
       icon: 'leaf',
       color: colors.success
     });

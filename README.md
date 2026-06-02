@@ -1,6 +1,6 @@
-# 🚀 FinVault Expense Tracker
+# 🚀 Spendly Expense Tracker
 
-FinVault is a modern, premium Expense Tracking application built with **React Native** and **Expo**. It features a stunning UI, smooth animations, and comprehensive financial management tools powered by **Supabase Cloud**.
+Spendly is a modern, premium Expense Tracking application built with **React Native** and **Expo**. It features a stunning UI, smooth animations, and comprehensive financial management tools powered by **Supabase Cloud**.
 
 ---
 
@@ -36,7 +36,7 @@ FinVault is a modern, premium Expense Tracking application built with **React Na
 ## 📁 Project Structure
 
 ```text
-expense-tracking-app/
+spendly/
 ├── app/                    # Expo Router screens
 │   ├── (auth)/             # Professional Auth Flow (Google/Email)
 │   ├── (tabs)/             # Main app (Dashboard, History, Analytics, Settings)
@@ -63,7 +63,7 @@ Make sure you have Node.js installed. You will also need the **Expo Go** app on 
 
 1. **Clone and Install:**
    ```bash
-   cd expense-tracking-app
+   cd spendly
    npm install
    ```
 

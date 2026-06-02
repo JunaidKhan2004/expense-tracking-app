@@ -31,9 +31,23 @@ export default function CategoryManageScreen() {
 
   const customCategories = categories.filter(c => c.isCustom);
 
+  const CATEGORY_MAX_LENGTH = 30;
+
   const handleAddCategory = async () => {
-    if (!name.trim()) {
+    const trimmedName = name.trim();
+    if (!trimmedName) {
       showToast.error('Error', 'Please enter a category name');
+      return;
+    }
+    if (trimmedName.length > CATEGORY_MAX_LENGTH) {
+      showToast.error('Name Too Long', `Category name must be ${CATEGORY_MAX_LENGTH} characters or less`);
+      return;
+    }
+    const duplicate = categories.some(
+      c => c.name.toLowerCase() === trimmedName.toLowerCase()
+    );
+    if (duplicate) {
+      showToast.error('Already Exists', 'A category with this name already exists');
       return;
     }
 
@@ -103,10 +117,11 @@ export default function CategoryManageScreen() {
               </View>
               <TextInput
                 style={[styles.input, { color: colors.text }]}
-                placeholder="Category Name"
+                placeholder="Category Name (max 30)"
                 placeholderTextColor={colors.textMuted}
                 value={name}
                 onChangeText={setName}
+                maxLength={30}
               />
             </View>
 

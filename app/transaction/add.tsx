@@ -31,7 +31,6 @@ export default function AddTransactionScreen() {
   const [selectedWallet, setSelectedWallet] = useState(wallets[0]?.id ?? '');
   const [isRecurring, setIsRecurring] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [initialAmount, setInitialAmount] = useState<number | null>(null);
 
   const isEdit = !!id;
   const transactionToEdit = isEdit ? transactions.find(t => t.id === id) : null;
@@ -48,7 +47,6 @@ export default function AddTransactionScreen() {
     if (isEdit && transactionToEdit) {
       setType(transactionToEdit.type);
       setAmount(transactionToEdit.amount.toString());
-      setInitialAmount(transactionToEdit.amount);
       setTitle(transactionToEdit.title);
       setNotes(transactionToEdit.notes ?? '');
       setSelectedCategory(transactionToEdit.categoryId);
@@ -66,10 +64,17 @@ export default function AddTransactionScreen() {
 
   const filteredCategories = categories.filter((c) => c.type === type || c.type === 'both');
 
+  const MAX_TRANSACTION_AMOUNT = 1_000_000_000;
+
   const handleSave = async () => {
-    if (!amount || parseFloat(amount) <= 0) { 
-      showToast.error('Invalid Amount', 'Please enter a valid amount'); 
-      return; 
+    const numAmount = parseFloat(amount);
+    if (!amount || isNaN(numAmount) || !isFinite(numAmount) || numAmount <= 0) {
+      showToast.error('Invalid Amount', 'Please enter a valid amount');
+      return;
+    }
+    if (numAmount > MAX_TRANSACTION_AMOUNT) {
+      showToast.error('Amount Too Large', 'Amount cannot exceed 1,000,000,000');
+      return;
     }
     if (!title.trim()) { 
       showToast.error('Missing Title', 'Please enter a title'); 
@@ -82,9 +87,7 @@ export default function AddTransactionScreen() {
 
     setIsSaving(true);
     try {
-      const numAmount = parseFloat(amount);
-
-      if (isEdit && id) {
+      if (isEdit && id && transactionToEdit) {
         await updateTransaction(id, {
           type,
           amount: numAmount,
@@ -95,15 +98,12 @@ export default function AddTransactionScreen() {
           isRecurring,
         });
 
-        // Re-adjust balance if amount or type changed
-        if (initialAmount !== null && (initialAmount !== numAmount || transactionToEdit?.type !== type)) {
-          // Reverse old amount
-          const oldType = transactionToEdit?.type === 'income' ? 'expense' : 'income';
-          await adjustBalance(transactionToEdit!.walletId, initialAmount, oldType);
-          // Apply new amount
-          await adjustBalance(selectedWallet, numAmount, type);
-        }
-        
+        // Always reverse the old transaction's effect, then apply the new one.
+        // This handles all change combinations: amount, type, or wallet switch.
+        const oldReverseType = transactionToEdit.type === 'income' ? 'expense' : 'income';
+        await adjustBalance(transactionToEdit.walletId, transactionToEdit.amount, oldReverseType);
+        await adjustBalance(selectedWallet, numAmount, type);
+
         showToast.success('Transaction Updated', 'Changes saved successfully');
       } else {
         await addTransaction({

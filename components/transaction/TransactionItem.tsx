@@ -193,7 +193,6 @@ const styles = StyleSheet.create({
   },
   leftAction: {
     flex: 1,
-    backgroundColor: '#388e3c',
     justifyContent: 'center',
     borderRadius: Radius.lg,
     marginBottom: Spacing.sm,
@@ -202,7 +201,6 @@ const styles = StyleSheet.create({
   },
   rightAction: {
     flex: 1,
-    backgroundColor: '#dd2c00',
     justifyContent: 'center',
     alignItems: 'flex-end',
     borderRadius: Radius.lg,

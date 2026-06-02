@@ -15,8 +15,10 @@ interface GoalCardProps {
 
 export function GoalCard({ goal, onPress, currency }: GoalCardProps) {
   const { colors } = useTheme();
-  const percentage = (goal.currentAmount / goal.targetAmount) * 100;
-  const remaining = goal.targetAmount - goal.currentAmount;
+  const percentage = goal.targetAmount > 0
+    ? Math.min((goal.currentAmount / goal.targetAmount) * 100, 100)
+    : 0;
+  const remaining = Math.max(goal.targetAmount - goal.currentAmount, 0);
 
   return (
     <TouchableOpacity 

@@ -12,36 +12,35 @@ import Animated, {
   withDelay,
   withRepeat,
   withSequence,
-  withTiming
+  withTiming,
 } from 'react-native-reanimated';
 import { FontSize, FontWeight } from '../constants/theme';
 import { useTheme } from '../hooks/useTheme';
 import { useAuthStore } from '../store/useAuthStore';
+import { useAppStore } from '../store/useAppStore';
 
 const { width } = Dimensions.get('window');
 
 export default function Index() {
-  const { isAuthenticated, isLoading: storeLoading } = useAuthStore();
+  const { isAuthenticated } = useAuthStore();
+  const { isHydrating } = useAppStore();
   const { colors, isDark } = useTheme();
-  const [isReady, setIsReady] = useState(false);
+  const [minTimeElapsed, setMinTimeElapsed] = useState(false);
 
   // Animation shared values
   const logoScale = useSharedValue(0.3);
   const logoOpacity = useSharedValue(0);
-  const textOpacity = useSharedValue(0);
-  const textTranslateY = useSharedValue(20);
+  const loadingProgress = useSharedValue(0);
   const pulse = useSharedValue(1);
 
   useEffect(() => {
-    // Hide native splash screen
     SplashScreen.hideAsync();
 
-    // Start animations
     logoScale.value = withTiming(1, { duration: 1000, easing: Easing.out(Easing.back(1.5)) });
     logoOpacity.value = withTiming(1, { duration: 800 });
 
-    textOpacity.value = withDelay(500, withTiming(1, { duration: 800 }));
-    textTranslateY.value = withDelay(500, withTiming(0, { duration: 800, easing: Easing.out(Easing.exp) }));
+    // Animate bar to 85% while hydrating, then complete to 100% when done
+    loadingProgress.value = withTiming(0.85, { duration: 2000 });
 
     pulse.value = withDelay(1200, withRepeat(
       withSequence(
@@ -52,25 +51,27 @@ export default function Index() {
       true
     ));
 
-    // Simulate a minimum splash time for premium feel
-    const timer = setTimeout(() => {
-      setIsReady(true);
-    }, 2500);
-
+    const timer = setTimeout(() => setMinTimeElapsed(true), 1800);
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (!isHydrating) {
+      loadingProgress.value = withTiming(1, { duration: 300 });
+    }
+  }, [isHydrating]);
 
   const logoStyle = useAnimatedStyle(() => ({
     transform: [{ scale: logoScale.value * pulse.value }],
     opacity: logoOpacity.value,
   }));
 
-  const textStyle = useAnimatedStyle(() => ({
-    opacity: textOpacity.value,
-    transform: [{ translateY: textTranslateY.value }],
+  const progressBarStyle = useAnimatedStyle(() => ({
+    width: `${loadingProgress.value * 100}%` as any,
   }));
 
-  if (isReady && !storeLoading) {
+  // Wait for both minimum animation time AND store hydration to complete
+  if (minTimeElapsed && !isHydrating) {
     return isAuthenticated ? <Redirect href="/(tabs)" /> : <Redirect href="/(auth)/login" />;
   }
 
@@ -85,7 +86,7 @@ export default function Index() {
       <View style={styles.content}>
         <Animated.View style={[styles.logoContainer, logoStyle,]}>
           <Image
-            source={isDark ? require('../assets/images/splashLogo.png') : require('../assets/images/splashLogo.png')}
+            source={require('../assets/images/AppLogo.png')}
             style={{ width: 100, height: 100, resizeMode: 'contain' }}
           />
         </Animated.View>
@@ -103,7 +104,8 @@ export default function Index() {
           <Animated.View
             style={[
               styles.loadingProgress,
-              { backgroundColor: colors.primary, width: '40%' }
+              { backgroundColor: colors.primary },
+              progressBarStyle,
             ]}
           />
         </View>

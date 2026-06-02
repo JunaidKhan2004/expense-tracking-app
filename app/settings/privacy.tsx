@@ -29,7 +29,7 @@ export default function PrivacyPolicyScreen() {
           <Ionicons name="shield-checkmark" size={32} color={colors.primary} />
           <Text style={[styles.infoTitle, { color: colors.text }]}>Your Data is Secure</Text>
           <Text style={[styles.infoSub, { color: colors.textSecondary }]}>
-            At FinVault, we prioritize your financial privacy. All your data is encrypted and synced securely via Supabase.
+            At Spendly, we prioritize your financial privacy. All your data is encrypted and synced securely via Supabase.
           </Text>
         </View>
 
@@ -45,7 +45,7 @@ export default function PrivacyPolicyScreen() {
 
         <Section 
           title="3. Security Measures" 
-          content="FinVault uses industry-standard encryption for data in transit and at rest. Biometric data (FaceID/Fingerprint) is handled by your device's secure enclave and is never stored on our servers."
+          content="Spendly uses industry-standard encryption for data in transit and at rest. Biometric data (FaceID/Fingerprint) is handled by your device's secure enclave and is never stored on our servers."
         />
 
         <Section 
@@ -60,7 +60,7 @@ export default function PrivacyPolicyScreen() {
 
         <View style={styles.footer}>
           <Text style={[styles.footerText, { color: colors.textMuted }]}>Last Updated: April 29, 2026</Text>
-          <Text style={[styles.footerText, { color: colors.textMuted }]}>© 2026 FinVault Financial Inc.</Text>
+          <Text style={[styles.footerText, { color: colors.textMuted }]}>© 2026 Spendly Financial Inc.</Text>
         </View>
       </ScrollView>
     </View>

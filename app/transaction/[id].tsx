@@ -13,11 +13,21 @@ import { formatCurrencyFull, formatDate, formatTime } from '../../utils/formatte
 export default function TransactionDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { colors } = useTheme();
-  const { transactions, categories, deleteTransaction } = useTransactionStore();
+  const { transactions, categories, deleteTransaction, isLoading } = useTransactionStore();
   const { wallets } = useWalletStore();
   const { settings } = useSettingsStore();
 
   const transaction = transactions.find((t) => t.id === id);
+
+  // Show loading while store is hydrating to avoid a "not found" flash
+  if (isLoading) {
+    return (
+      <View style={[styles.notFound, { backgroundColor: colors.background }]}>
+        <Ionicons name="hourglass-outline" size={48} color={colors.textMuted} />
+        <Text style={[styles.notFoundText, { color: colors.textSecondary }]}>Loading...</Text>
+      </View>
+    );
+  }
 
   if (!transaction) {
     return (
@@ -70,7 +80,7 @@ export default function TransactionDetailScreen() {
         <LinearGradient colors={gradient} style={styles.heroCard} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
           <View style={styles.heroDecor1} />
           <View style={styles.heroDecor2} />
-          <View style={[styles.catIcon, { backgroundColor: `${category?.color ?? '#fff'}33` }]}>
+          <View style={[styles.catIcon, { backgroundColor: `${category?.color ?? colors.primary}33` }]}>
             <Ionicons name={(category?.icon ?? 'ellipsis-horizontal-circle') as any} size={28} color="#fff" />
           </View>
           <Text style={styles.heroTitle}>{transaction.title}</Text>

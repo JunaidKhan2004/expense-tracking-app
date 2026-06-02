@@ -26,8 +26,6 @@ export const OfflineBanner = () => {
     return () => unsubscribe();
   }, []);
 
-  if (!isOffline && slideAnim === new Animated.Value(-100)) return null;
-
   return (
     <Animated.View 
       style={[

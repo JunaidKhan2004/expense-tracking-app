@@ -15,7 +15,9 @@ import { useSettingsStore } from '../store/useSettingsStore';
 import { useTransactionStore } from '../store/useTransactionStore';
 import { useWalletStore } from '../store/useWalletStore';
 import { useGoalStore } from '../store/useGoalStore';
+import { useAppStore } from '../store/useAppStore';
 import { registerForPushNotificationsAsync } from '../utils/notifications';
+import { supabase } from '../lib/supabase';
 
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -28,20 +30,50 @@ export default function RootLayout() {
   const { hydrate: hydrateBudgets } = useBudgetStore();
   const { hydrate: hydrateNotifications } = useNotificationStore();
   const { hydrate: hydrateGoals } = useGoalStore();
+  const { setIsHydrating } = useAppStore();
   const { isDark, colors } = useTheme();
 
   useEffect(() => {
-    // Initial auth hydration
-    hydrateAuth();
-    hydrateSettings();
-    
-    // Register for notifications
+    const bootstrap = async () => {
+      setIsHydrating(true);
+      try {
+        await Promise.all([hydrateAuth(), hydrateSettings()]);
+      } finally {
+        setIsHydrating(false);
+      }
+    };
+    bootstrap();
     registerForPushNotificationsAsync();
+
+    // Listen to Supabase auth events — handles Google OAuth callback
+    // and token refresh automatically across all environments
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+          // Only re-hydrate if we don't already have a user (avoids double hydration)
+          const currentUser = useAuthStore.getState().user;
+          if (!currentUser) {
+            await hydrateAuth();
+          }
+        }
+        if (event === 'SIGNED_OUT') {
+          useAuthStore.setState({
+            user: null,
+            isAuthenticated: false,
+            error: null,
+            isInRecoveryFlow: false,
+            tempEmail: null,
+          });
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
     if (isAuthenticated) {
-      // Hydrate settings first to get the correct user currency, then hydrate other stores
+      // Hydrate user data after auth is confirmed. Settings already loaded above.
       hydrateSettings().then(() => {
         Promise.all([
           hydrateTransactions(),

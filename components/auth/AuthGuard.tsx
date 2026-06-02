@@ -36,7 +36,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
     if (settings.biometricEnabled) {
       const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: 'Unlock FinVault',
+        promptMessage: 'Unlock Spendly',
         fallbackLabel: 'Use PIN',
       });
 
@@ -101,7 +101,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
               <LinearGradient colors={colors.gradient.primary} style={styles.iconBox}>
                 <Ionicons name="lock-closed" size={40} color="#fff" />
               </LinearGradient>
-              <Text style={[styles.title, { color: colors.text }]}>FinVault Locked</Text>
+              <Text style={[styles.title, { color: colors.text }]}>Spendly Locked</Text>
               <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
                 Authentication required to access your data
               </Text>

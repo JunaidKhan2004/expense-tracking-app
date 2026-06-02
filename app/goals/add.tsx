@@ -52,6 +52,7 @@ export default function AddGoalScreen() {
   const [name, setName] = useState('');
   const [targetAmount, setTargetAmount] = useState('');
   const [currentAmount, setCurrentAmount] = useState('');
+  const [deadline, setDeadline] = useState('');
   const [icon, setIcon] = useState('flag-outline');
   const [color, setColor] = useState('#4F46E5');
   
@@ -66,6 +67,7 @@ export default function AddGoalScreen() {
         setName(goal.name);
         setTargetAmount(goal.targetAmount.toString());
         setCurrentAmount(goal.currentAmount.toString());
+        setDeadline(goal.deadline ?? '');
         setIcon(goal.icon);
         setColor(goal.color);
       }
@@ -74,14 +76,26 @@ export default function AddGoalScreen() {
 
   const handleSave = async () => {
     if (!name.trim()) return showToast.error('Missing Name', 'Please enter a goal name');
-    if (!targetAmount || Number(targetAmount) <= 0) return showToast.error('Invalid Amount', 'Please enter a valid target amount');
+
+    const target = Number(targetAmount);
+    const current = Number(currentAmount) || 0;
+
+    if (!targetAmount || isNaN(target) || target <= 0)
+      return showToast.error('Invalid Amount', 'Please enter a valid target amount');
+    if (current < 0)
+      return showToast.error('Invalid Savings', 'Initial savings cannot be negative');
+    if (current > target)
+      return showToast.error('Invalid Savings', 'Initial savings cannot exceed the target amount');
+    if (deadline && isNaN(new Date(deadline).getTime()))
+      return showToast.error('Invalid Date', 'Please enter a valid deadline date (YYYY-MM-DD)');
 
     setIsSubmitting(true);
     try {
       const goalData = {
-        name,
-        targetAmount: Number(targetAmount),
-        currentAmount: Number(currentAmount) || 0,
+        name: name.trim(),
+        targetAmount: target,
+        currentAmount: current,
+        deadline: deadline.trim() || undefined,
         icon,
         color,
       };
@@ -166,8 +180,16 @@ export default function AddGoalScreen() {
             </View>
           </View>
 
+          <Input
+            label="Deadline (Optional)"
+            placeholder="YYYY-MM-DD"
+            value={deadline}
+            onChangeText={setDeadline}
+            leftIcon="calendar-outline"
+          />
+
           <View style={styles.selectors}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.selector, { borderColor: colors.border }]}
               onPress={() => setIsIconModalVisible(true)}
             >

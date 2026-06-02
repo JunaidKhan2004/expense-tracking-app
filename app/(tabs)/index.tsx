@@ -77,16 +77,16 @@ export default function DashboardScreen() {
     setRefreshing(false);
   };
 
-  const income = totalIncome();
-  const expenses = totalExpenses();
+  const income = totalIncome() || 0;
+  const expenses = totalExpenses() || 0;
   const savings = income - expenses;
-  const savingsRate = income > 0 ? Math.round((savings / income) * 100) : 0;
+  const savingsRate = income > 0 ? Math.max(0, Math.round((savings / income) * 100)) : 0;
 
   const budgetProgress = getBudgetsWithProgress();
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
-  const firstName = user?.name?.split(' ')[0] ?? 'there';
+  const firstName = user?.name?.split(' ')?.[0] || 'there';
 
   const insets = useSafeAreaInsets();
 
@@ -239,7 +239,9 @@ export default function DashboardScreen() {
               </TouchableOpacity>
             ) : (
               goals.map((goal) => {
-                const pct = (goal.currentAmount / goal.targetAmount) * 100;
+                const pct = goal.targetAmount > 0
+                  ? Math.min((goal.currentAmount / goal.targetAmount) * 100, 100)
+                  : 0;
                 return (
                   <TouchableOpacity
                     key={goal.id}
