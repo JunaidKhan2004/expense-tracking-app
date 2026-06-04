@@ -1,40 +1,81 @@
-import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
-import * as Haptics from 'expo-haptics';
-import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
-import React, { useEffect, useMemo, useRef } from 'react';
+import { Ionicons } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
+import * as Haptics from "expo-haptics";
+import { LinearGradient } from "expo-linear-gradient";
+import { router } from "expo-router";
+import React, { useEffect, useMemo, useRef } from "react";
 import {
-  Animated, Dimensions, RefreshControl,
+  Animated,
+  Dimensions,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { TransactionItem } from '../../components/transaction/TransactionItem';
-import { FontSize, Radius, Shadow, Spacing } from '../../constants/theme';
-import { useTheme } from '../../hooks/useTheme';
-import { useAuthStore } from '../../store/useAuthStore';
-import { useBudgetStore } from '../../store/useBudgetStore';
-import { useGoalStore } from '../../store/useGoalStore';
-import { useNotificationStore } from '../../store/useNotificationStore';
-import { useSettingsStore } from '../../store/useSettingsStore';
-import { useTransactionStore } from '../../store/useTransactionStore';
-import { useWalletStore } from '../../store/useWalletStore';
-import { generateAIInsights } from '../../utils/ai';
-import { formatCurrency, formatCurrencyFull } from '../../utils/formatters';
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { TransactionItem } from "../../components/transaction/TransactionItem";
+import { FontSize, Radius, Shadow, Spacing } from "../../constants/theme";
+import { useTheme } from "../../hooks/useTheme";
+import { useAuthStore } from "../../store/useAuthStore";
+import { useBudgetStore } from "../../store/useBudgetStore";
+import { useGoalStore } from "../../store/useGoalStore";
+import { useNotificationStore } from "../../store/useNotificationStore";
+import { useSettingsStore } from "../../store/useSettingsStore";
+import { useTransactionStore } from "../../store/useTransactionStore";
+import { useWalletStore } from "../../store/useWalletStore";
+import { generateAIInsights } from "../../utils/ai";
+import { formatCurrency, formatCurrencyFull } from "../../utils/formatters";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
+
+const DAYS = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
+const MONTHS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
 
 export default function DashboardScreen() {
   const { colors, isDark } = useTheme();
   const { user } = useAuthStore();
-  const { transactions, categories, filteredTransactions, totalIncome, totalExpenses, netBalance, hydrate, deleteTransaction, filterPeriod, searchQuery } = useTransactionStore();
+  const {
+    transactions,
+    categories,
+    filteredTransactions,
+    totalIncome,
+    totalExpenses,
+    netBalance,
+    hydrate,
+    deleteTransaction,
+    filterPeriod,
+    searchQuery,
+  } = useTransactionStore();
   const { wallets, totalBalance } = useWalletStore();
   const { settings } = useSettingsStore();
-  const { budgets, getBudgetsWithProgress, hydrate: hydrateBudgets } = useBudgetStore();
+  const {
+    budgets,
+    getBudgetsWithProgress,
+    hydrate: hydrateBudgets,
+  } = useBudgetStore();
   const { goals, hydrate: hydrateGoals } = useGoalStore();
   const { unreadCount } = useNotificationStore();
   const [refreshing, setRefreshing] = React.useState(false);
@@ -51,16 +92,38 @@ export default function DashboardScreen() {
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
-      Animated.spring(slideAnim, { toValue: 0, tension: 60, friction: 8, useNativeDriver: true }),
-      Animated.spring(balanceScale, { toValue: 1, tension: 80, friction: 8, useNativeDriver: true }),
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        tension: 60,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+      Animated.spring(balanceScale, {
+        toValue: 1,
+        tension: 80,
+        friction: 8,
+        useNativeDriver: true,
+      }),
     ]).start();
 
     Animated.loop(
       Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1, duration: 3000, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 0, duration: 3000, useNativeDriver: true }),
-      ])
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 3000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 0,
+          duration: 3000,
+          useNativeDriver: true,
+        }),
+      ]),
     ).start();
   }, []);
 
@@ -82,13 +145,18 @@ export default function DashboardScreen() {
   const income = totalIncome() || 0;
   const expenses = totalExpenses() || 0;
   const savings = income - expenses;
-  const savingsRate = income > 0 ? Math.max(0, Math.round((savings / income) * 100)) : 0;
+  const savingsRate =
+    income > 0 ? Math.max(0, Math.round((savings / income) * 100)) : 0;
 
   const budgetProgress = getBudgetsWithProgress();
 
   const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
-  const firstName = user?.name?.split(' ')?.[0] || 'there';
+  const greeting =
+    hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : "Good Evening";
+  const firstName = user?.name?.split(" ")?.[0] || "there";
+
+  const now = new Date();
+  const dateStr = `${DAYS[now.getDay()]}, ${MONTHS[now.getMonth()]} ${now.getDate()}`;
 
   const insets = useSafeAreaInsets();
 
@@ -96,92 +164,212 @@ export default function DashboardScreen() {
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + Spacing.sm }]}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+        contentContainerStyle={[
+          styles.scroll,
+          { paddingTop: insets.top + Spacing.sm },
+        ]}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
+        }
       >
         {/* ─── Header ──────────────────────────────────────────────────────── */}
         <Animated.View style={[styles.header, { opacity: fadeAnim }]}>
           <View>
-            <Text style={[styles.greeting, { color: colors.textSecondary }]}>{greeting}</Text>
-            <Text style={[styles.userName, { color: colors.text }]}>{firstName}</Text>
+            <View style={styles.greetingRow}>
+              <Ionicons
+                name="sunny-outline"
+                size={13}
+                color={colors.textMuted}
+              />
+              <Text style={[styles.greeting, { color: colors.textMuted }]}>
+                {greeting}
+              </Text>
+              <Text style={[styles.greetingDot, { color: colors.textMuted }]}>
+                ·
+              </Text>
+              <Text style={[styles.greeting, { color: colors.textMuted }]}>
+                {dateStr}
+              </Text>
+            </View>
+            <Text style={[styles.userName, { color: colors.text }]}>
+              {firstName}
+            </Text>
           </View>
           <View style={styles.headerRight}>
             <TouchableOpacity
-              style={[styles.headerBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+              style={[
+                styles.headerBtn,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                router.push('/notifications' as any);
+                router.push("/notifications" as any);
               }}
             >
-              <Ionicons name="notifications-outline" size={22} color={colors.text} />
+              <Ionicons
+                name="notifications-outline"
+                size={22}
+                color={colors.text}
+              />
               {unreadCount > 0 && (
-                <View style={[styles.notifDot, { backgroundColor: colors.danger }]}>
-                  <Text style={styles.notifCount}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                <View
+                  style={[styles.notifDot, { backgroundColor: colors.danger }]}
+                >
+                  <Text style={styles.notifCount}>
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </Text>
                 </View>
               )}
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.avatarCircle, { backgroundColor: colors.primary }]}
+              style={[styles.avatarRing, { borderColor: colors.primary }]}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                router.push('/(tabs)/settings');
+                router.push("/(tabs)/settings");
               }}
             >
-              <Text style={styles.avatarText}>{firstName.charAt(0).toUpperCase()}</Text>
+              <View
+                style={[
+                  styles.avatarCircle,
+                  { backgroundColor: colors.primary },
+                ]}
+              >
+                <Text style={styles.avatarText}>
+                  {firstName.charAt(0).toUpperCase()}
+                </Text>
+              </View>
             </TouchableOpacity>
           </View>
         </Animated.View>
 
         {/* ─── Balance Card ─────────────────────────────────────────────────── */}
-        <Animated.View style={{ opacity: fadeAnim, transform: [{ scale: balanceScale }], marginBottom: Spacing.xl }}>
-          <LinearGradient colors={colors.gradient.primary} style={styles.balanceCard} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+        <Animated.View
+          style={{
+            opacity: fadeAnim,
+            transform: [{ scale: balanceScale }],
+            marginBottom: Spacing.xl,
+          }}
+        >
+          <LinearGradient
+            colors={colors.gradient.primary}
+            style={styles.balanceCard}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
             {/* Decorative circles */}
-            <Animated.View style={[styles.decorCircle1, { transform: [{ scale: pulseScale }, { translateY: pulseTranslate }] }]} />
-            <Animated.View style={[styles.decorCircle2, { transform: [{ scale: pulseScale }, { translateY: pulseTranslate }] }]} />
+            <Animated.View
+              style={[
+                styles.decorCircle1,
+                {
+                  transform: [
+                    { scale: pulseScale },
+                    { translateY: pulseTranslate },
+                  ],
+                },
+              ]}
+            />
+            <Animated.View
+              style={[
+                styles.decorCircle2,
+                {
+                  transform: [
+                    { scale: pulseScale },
+                    { translateY: pulseTranslate },
+                  ],
+                },
+              ]}
+            />
+            <View style={styles.decorCircle3} />
 
             <View style={styles.balanceLabelRow}>
-              <Text style={styles.balanceLabel}>Total Balance</Text>
+              <View style={styles.balanceLabelLeft}>
+                {/* <View style={styles.balanceDot} /> */}
+                <Text style={styles.balanceLabel}>Total Balance</Text>
+              </View>
               <TouchableOpacity
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setIsBalanceHidden(h => !h);
+                  setIsBalanceHidden((h) => !h);
                 }}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={styles.eyeBtn}
               >
                 <Ionicons
-                  name={isBalanceHidden ? 'eye-off-outline' : 'eye-outline'}
+                  name={isBalanceHidden ? "eye-off-outline" : "eye-outline"}
                   size={18}
-                  color="rgba(255,255,255,0.75)"
+                  color="rgba(255,255,255,0.8)"
                 />
               </TouchableOpacity>
             </View>
 
             <Text style={styles.balanceAmount}>
-              {isBalanceHidden ? '••••••' : formatCurrencyFull(totalBalance(), settings.currency)}
+              {isBalanceHidden
+                ? "••••••"
+                : formatCurrencyFull(totalBalance(), settings.currency)}
             </Text>
-            <Text style={styles.balanceSubtitle}>Across {wallets.length} account{wallets.length !== 1 ? 's' : ''}</Text>
+            <Text style={styles.balanceSubtitle}>
+              Across {wallets.length} account{wallets.length !== 1 ? "s" : ""}
+            </Text>
 
+            {/* 3-column stats: Income | Savings | Expenses */}
             <View style={styles.balanceStats}>
               <View style={styles.balanceStat}>
-                <View style={styles.balanceStatIcon}>
-                  <Ionicons name="arrow-down" size={14} color="#fff" />
+                <View
+                  style={[
+                    styles.balanceStatIcon,
+                    { backgroundColor: "rgba(100,255,150,0.2)" },
+                  ]}
+                >
+                  <Ionicons name="arrow-down" size={13} color="#7DFFB0" />
                 </View>
                 <View>
                   <Text style={styles.balanceStatLabel}>Income</Text>
                   <Text style={styles.balanceStatValue}>
-                    {isBalanceHidden ? '••••' : formatCurrency(income, settings.currency)}
+                    {isBalanceHidden
+                      ? "••••"
+                      : formatCurrency(income, settings.currency)}
                   </Text>
                 </View>
               </View>
-              <View style={[styles.balanceDivider]} />
+              <View style={styles.balanceDivider} />
               <View style={styles.balanceStat}>
-                <View style={[styles.balanceStatIcon, { backgroundColor: 'rgba(255,255,255,0.15)' }]}>
-                  <Ionicons name="arrow-up" size={14} color="#fff" />
+                <View
+                  style={[
+                    styles.balanceStatIcon,
+                    { backgroundColor: "rgba(255,255,255,0.18)" },
+                  ]}
+                >
+                  <Ionicons name="trending-up" size={13} color="#fff" />
+                </View>
+                <View>
+                  <Text style={styles.balanceStatLabel}>Savings</Text>
+                  <Text style={styles.balanceStatValue}>
+                    {isBalanceHidden
+                      ? "••••"
+                      : formatCurrency(savings, settings.currency)}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.balanceDivider} />
+              <View style={styles.balanceStat}>
+                <View
+                  style={[
+                    styles.balanceStatIcon,
+                    { backgroundColor: "rgba(255,100,100,0.22)" },
+                  ]}
+                >
+                  <Ionicons name="arrow-up" size={13} color="#FF8F9A" />
                 </View>
                 <View>
                   <Text style={styles.balanceStatLabel}>Expenses</Text>
                   <Text style={styles.balanceStatValue}>
-                    {isBalanceHidden ? '••••' : formatCurrency(expenses, settings.currency)}
+                    {isBalanceHidden
+                      ? "••••"
+                      : formatCurrency(expenses, settings.currency)}
                   </Text>
                 </View>
               </View>
@@ -190,14 +378,19 @@ export default function DashboardScreen() {
         </Animated.View>
 
         {/* ─── Quick Stats ──────────────────────────────────────────────────── */}
-        <Animated.View style={[styles.row, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+        <Animated.View
+          style={[
+            styles.row,
+            { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+          ]}
+        >
           <StatCard
             label="Savings"
             value={formatCurrency(savings, settings.currency)}
             icon="trending-up"
             gradient={colors.gradient.income}
             colors={colors}
-            sub={`${savingsRate}% of income`}
+            sub={`${savingsRate}% rate`}
           />
           <StatCard
             label="Transactions"
@@ -205,12 +398,14 @@ export default function DashboardScreen() {
             icon="swap-horizontal"
             gradient={colors.gradient.primary}
             colors={colors}
-            sub="This month"
+            sub="Total recorded"
           />
         </Animated.View>
 
         {/* ─── AI Smart Advisor ────────────────────────────────────────────── */}
-        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+        <Animated.View
+          style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}
+        >
           <AIAdvisorSection
             insights={generateAIInsights(transactions, categories, colors)}
             colors={colors}
@@ -219,14 +414,43 @@ export default function DashboardScreen() {
         </Animated.View>
 
         {/* ─── Wallets ──────────────────────────────────────────────────────── */}
-        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+        <Animated.View
+          style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}
+        >
           <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>My Wallets</Text>
-            <TouchableOpacity onPress={() => router.push('/wallet/manage')}>
-              <Text style={[styles.seeAll, { color: colors.primary }]}>Manage</Text>
+            <View style={styles.sectionTitleRow}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                My Wallets
+              </Text>
+              {wallets.length > 0 && (
+                <View
+                  style={[
+                    styles.countBadge,
+                    {
+                      backgroundColor: colors.primaryGlow,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[styles.countBadgeText, { color: colors.primary }]}
+                  >
+                    {wallets.length}
+                  </Text>
+                </View>
+              )}
+            </View>
+            <TouchableOpacity onPress={() => router.push("/wallet/manage")}>
+              <Text style={[styles.seeAll, { color: colors.primary }]}>
+                Manage
+              </Text>
             </TouchableOpacity>
           </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.walletsRow}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.walletsRow}
+          >
             {wallets.map((wallet) => (
               <LinearGradient
                 key={wallet.id}
@@ -235,55 +459,175 @@ export default function DashboardScreen() {
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
               >
-                <View style={styles.walletIcon}>
-                  <Ionicons name={wallet.icon as any} size={18} color="#fff" />
+                <View style={styles.walletTopRow}>
+                  <View style={styles.walletIcon}>
+                    <Ionicons
+                      name={wallet.icon as any}
+                      size={18}
+                      color="#fff"
+                    />
+                  </View>
+                  <View style={styles.walletTypePill}>
+                    <Text style={styles.walletTypePillText}>
+                      {wallet.type.toUpperCase()}
+                    </Text>
+                  </View>
                 </View>
-                <Text style={styles.walletName}>{wallet.name}</Text>
+                <Text style={styles.walletName} numberOfLines={1}>
+                  {wallet.name}
+                </Text>
                 <Text style={styles.walletBalance}>
                   {formatCurrency(wallet.balance, settings.currency)}
                 </Text>
-                <Text style={styles.walletType}>{wallet.type.toUpperCase()}</Text>
               </LinearGradient>
             ))}
+            <TouchableOpacity
+              style={[
+                styles.addWalletCard,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+              onPress={() => router.push("/wallet/manage")}
+            >
+              <View
+                style={[
+                  styles.addWalletIcon,
+                  { backgroundColor: colors.primaryGlow },
+                ]}
+              >
+                <Ionicons name="add" size={20} color={colors.primary} />
+              </View>
+              <Text style={[styles.addWalletText, { color: colors.textMuted }]}>
+                Add Wallet
+              </Text>
+            </TouchableOpacity>
           </ScrollView>
         </Animated.View>
 
         {/* ─── Financial Goals ──────────────────────────────────────────────── */}
-        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+        <Animated.View
+          style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}
+        >
           <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Saving Goals</Text>
-            <TouchableOpacity onPress={() => router.push('/goals')}>
-              <Text style={[styles.seeAll, { color: colors.primary }]}>View All</Text>
+            <View style={styles.sectionTitleRow}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                Saving Goals
+              </Text>
+              {goals.length > 0 && (
+                <View
+                  style={[
+                    styles.countBadge,
+                    {
+                      backgroundColor: colors.primaryGlow,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[styles.countBadgeText, { color: colors.primary }]}
+                  >
+                    {goals.length}
+                  </Text>
+                </View>
+              )}
+            </View>
+            <TouchableOpacity onPress={() => router.push("/goals")}>
+              <Text style={[styles.seeAll, { color: colors.primary }]}>
+                View All
+              </Text>
             </TouchableOpacity>
           </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.walletsRow}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.walletsRow}
+          >
             {goals.length === 0 ? (
               <TouchableOpacity
-                style={[styles.emptyGoalCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-                onPress={() => router.push('/goals/add')}
+                style={[
+                  styles.emptyGoalCard,
+                  { backgroundColor: colors.card, borderColor: colors.border },
+                ]}
+                onPress={() => router.push("/goals/add")}
               >
-                <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
-                <Text style={[styles.emptyGoalText, { color: colors.textMuted }]}>Add a goal</Text>
+                <Ionicons
+                  name="add-circle-outline"
+                  size={24}
+                  color={colors.primary}
+                />
+                <Text
+                  style={[styles.emptyGoalText, { color: colors.textMuted }]}
+                >
+                  Add a goal
+                </Text>
               </TouchableOpacity>
             ) : (
               goals.map((goal) => {
-                const pct = goal.targetAmount > 0
-                  ? Math.min((goal.currentAmount / goal.targetAmount) * 100, 100)
-                  : 0;
+                const pct =
+                  goal.targetAmount > 0
+                    ? Math.min(
+                        (goal.currentAmount / goal.targetAmount) * 100,
+                        100,
+                      )
+                    : 0;
                 return (
                   <TouchableOpacity
                     key={goal.id}
-                    style={[styles.miniGoalCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+                    style={[
+                      styles.miniGoalCard,
+                      {
+                        backgroundColor: colors.card,
+                        borderColor: colors.border,
+                      },
+                    ]}
                     onPress={() => router.push(`/goals/${goal.id}`)}
                   >
-                    <View style={[styles.miniGoalIcon, { backgroundColor: `${goal.color}22` }]}>
-                      <Ionicons name={goal.icon as any} size={16} color={goal.color} />
+                    <View
+                      style={[
+                        styles.miniGoalIcon,
+                        { backgroundColor: `${goal.color}22` },
+                      ]}
+                    >
+                      <Ionicons
+                        name={goal.icon as any}
+                        size={16}
+                        color={goal.color}
+                      />
                     </View>
-                    <Text style={[styles.miniGoalName, { color: colors.text }]} numberOfLines={1}>{goal.name}</Text>
-                    <Text style={[styles.miniGoalPct, { color: goal.color }]}>{Math.round(pct)}%</Text>
-                    <View style={[styles.miniGoalProgress, { backgroundColor: colors.border }]}>
-                      <View style={[styles.miniGoalFill, { width: `${Math.min(pct, 100)}%`, backgroundColor: goal.color }]} />
+                    <Text
+                      style={[styles.miniGoalName, { color: colors.text }]}
+                      numberOfLines={1}
+                    >
+                      {goal.name}
+                    </Text>
+                    <Text style={[styles.miniGoalPct, { color: goal.color }]}>
+                      {Math.round(pct)}% saved
+                    </Text>
+                    <View
+                      style={[
+                        styles.miniGoalProgress,
+                        { backgroundColor: colors.border },
+                      ]}
+                    >
+                      <View
+                        style={[
+                          styles.miniGoalFill,
+                          {
+                            width: `${Math.min(pct, 100)}%`,
+                            backgroundColor: goal.color,
+                          },
+                        ]}
+                      />
                     </View>
+                    <Text
+                      style={[
+                        styles.miniGoalAmount,
+                        { color: colors.textMuted },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {formatCurrency(goal.currentAmount, settings.currency)} /{" "}
+                      {formatCurrency(goal.targetAmount, settings.currency)}
+                    </Text>
                   </TouchableOpacity>
                 );
               })
@@ -292,50 +636,147 @@ export default function DashboardScreen() {
         </Animated.View>
 
         {/* ─── Budget Progress ─────────────────────────────────────────────── */}
-        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+        <Animated.View
+          style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}
+        >
           <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Category Budgets</Text>
-            <TouchableOpacity onPress={() => router.push('/budget/manage')}>
-              <Text style={[styles.seeAll, { color: colors.primary }]}>Set Budget</Text>
+            <View style={styles.sectionTitleRow}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                Category Budgets
+              </Text>
+              {budgetProgress.length > 0 && (
+                <View
+                  style={[
+                    styles.countBadge,
+                    {
+                      backgroundColor: colors.primaryGlow,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[styles.countBadgeText, { color: colors.primary }]}
+                  >
+                    {budgetProgress.length}
+                  </Text>
+                </View>
+              )}
+            </View>
+            <TouchableOpacity onPress={() => router.push("/budget/manage")}>
+              <Text style={[styles.seeAll, { color: colors.primary }]}>
+                Set Budget
+              </Text>
             </TouchableOpacity>
           </View>
 
           {budgetProgress.length === 0 ? (
-            <View style={[styles.emptyBudget, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={[styles.emptyBudgetText, { color: colors.textMuted }]}>No budgets set for this month</Text>
-              <TouchableOpacity onPress={() => router.push('/budget/manage')}>
-                <Text style={[styles.emptyBudgetAction, { color: colors.primary }]}>Set your first budget</Text>
+            <View
+              style={[
+                styles.emptyBudget,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+            >
+              <Text
+                style={[styles.emptyBudgetText, { color: colors.textMuted }]}
+              >
+                No budgets set for this month
+              </Text>
+              <TouchableOpacity onPress={() => router.push("/budget/manage")}>
+                <Text
+                  style={[styles.emptyBudgetAction, { color: colors.primary }]}
+                >
+                  Set your first budget
+                </Text>
               </TouchableOpacity>
             </View>
           ) : (
             <View style={styles.budgetList}>
               {budgetProgress.slice(0, 4).map((budget) => {
-                const category = categories.find(c => c.id === budget.categoryId);
+                const category = categories.find(
+                  (c) => c.id === budget.categoryId,
+                );
                 const isOver = budget.percentage > 100;
+                const remaining = budget.amount - budget.spent;
                 return (
-                  <View key={budget.id} style={[styles.budgetCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <View
+                    key={budget.id}
+                    style={[
+                      styles.budgetCard,
+                      {
+                        backgroundColor: colors.card,
+                        borderColor: isOver
+                          ? `${colors.danger}44`
+                          : colors.border,
+                      },
+                    ]}
+                  >
                     <View style={styles.budgetInfo}>
-                      <View style={[styles.budgetIcon, { backgroundColor: `${category?.color ?? colors.primary}22` }]}>
-                        <Ionicons name={category?.icon as any ?? 'grid'} size={18} color={category?.color ?? colors.primary} />
+                      <View
+                        style={[
+                          styles.budgetIcon,
+                          {
+                            backgroundColor: `${category?.color ?? colors.primary}22`,
+                          },
+                        ]}
+                      >
+                        <Ionicons
+                          name={(category?.icon as any) ?? "grid"}
+                          size={18}
+                          color={category?.color ?? colors.primary}
+                        />
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text style={[styles.budgetName, { color: colors.text }]}>{category?.name ?? 'Category'}</Text>
-                        <Text style={[styles.budgetSpent, { color: colors.textMuted }]}>
-                          {formatCurrency(budget.spent, settings.currency)} of {formatCurrency(budget.amount, settings.currency)}
+                        <Text
+                          style={[styles.budgetName, { color: colors.text }]}
+                        >
+                          {category?.name ?? "Category"}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.budgetSpent,
+                            { color: colors.textMuted },
+                          ]}
+                        >
+                          {formatCurrency(budget.spent, settings.currency)} of{" "}
+                          {formatCurrency(budget.amount, settings.currency)}
                         </Text>
                       </View>
-                      <Text style={[styles.budgetPct, { color: isOver ? colors.danger : colors.text }]}>
-                        {Math.round(budget.percentage)}%
-                      </Text>
+                      <View style={styles.budgetRightCol}>
+                        <Text
+                          style={[
+                            styles.budgetPct,
+                            { color: isOver ? colors.danger : colors.text },
+                          ]}
+                        >
+                          {Math.round(budget.percentage)}%
+                        </Text>
+                        <Text
+                          style={[
+                            styles.budgetRemaining,
+                            { color: isOver ? colors.danger : colors.primary },
+                          ]}
+                        >
+                          {isOver
+                            ? `Over ${formatCurrency(Math.abs(remaining), settings.currency)}`
+                            : `${formatCurrency(remaining, settings.currency)} left`}
+                        </Text>
+                      </View>
                     </View>
-                    <View style={[styles.budgetProgressBg, { backgroundColor: colors.border }]}>
+                    <View
+                      style={[
+                        styles.budgetProgressBg,
+                        { backgroundColor: colors.border },
+                      ]}
+                    >
                       <View
                         style={[
                           styles.budgetProgressFill,
                           {
                             width: `${Math.min(budget.percentage, 100)}%`,
-                            backgroundColor: isOver ? colors.danger : category?.color ?? colors.primary
-                          }
+                            backgroundColor: isOver
+                              ? colors.danger
+                              : (category?.color ?? colors.primary),
+                          },
                         ]}
                       />
                     </View>
@@ -345,10 +786,21 @@ export default function DashboardScreen() {
               {budgetProgress.length > 4 && (
                 <TouchableOpacity
                   style={[styles.seeMoreBtn, { borderColor: colors.border }]}
-                  onPress={() => router.push('/budget/manage')}
+                  onPress={() => router.push("/budget/manage")}
                 >
-                  <Text style={[styles.seeMoreText, { color: colors.textSecondary }]}>View All {budgetProgress.length} Budgets</Text>
-                  <Ionicons name="chevron-forward" size={14} color={colors.textSecondary} />
+                  <Text
+                    style={[
+                      styles.seeMoreText,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    View All {budgetProgress.length} Budgets
+                  </Text>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={14}
+                    color={colors.textSecondary}
+                  />
                 </TouchableOpacity>
               )}
             </View>
@@ -356,20 +808,48 @@ export default function DashboardScreen() {
         </Animated.View>
 
         {/* ─── Recent Transactions ──────────────────────────────────────────── */}
-        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+        <Animated.View
+          style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}
+        >
           <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent Transactions</Text>
-            <TouchableOpacity onPress={() => router.push('/(tabs)/transactions')}>
-              <Text style={[styles.seeAll, { color: colors.primary }]}>See All</Text>
+            <View style={styles.sectionTitleRow}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                Recent Transactions
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => router.push("/(tabs)/transactions")}
+            >
+              <Text style={[styles.seeAll, { color: colors.primary }]}>
+                See All
+              </Text>
             </TouchableOpacity>
           </View>
 
           {recentTransactions.length === 0 ? (
-            <View style={[styles.emptyState, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Ionicons name="receipt-outline" size={40} color={colors.textMuted} />
-              <Text style={[styles.emptyText, { color: colors.textMuted }]}>No transactions yet</Text>
-              <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/transaction/add'); }}>
-                <Text style={[styles.emptyAction, { color: colors.primary }]}>Add your first one</Text>
+            <View
+              style={[
+                styles.emptyState,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+            >
+              <Ionicons
+                name="receipt-outline"
+                size={40}
+                color={colors.textMuted}
+              />
+              <Text style={[styles.emptyText, { color: colors.textMuted }]}>
+                No transactions yet
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push("/transaction/add");
+                }}
+              >
+                <Text style={[styles.emptyAction, { color: colors.primary }]}>
+                  Add your first one
+                </Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -378,18 +858,34 @@ export default function DashboardScreen() {
                 key={t.id}
                 transaction={t}
                 onPress={(tx) => router.push(`/transaction/${tx.id}`)}
-                onEdit={(tx) => router.push({ pathname: '/transaction/add', params: { id: tx.id } } as any)}
+                onEdit={(tx) =>
+                  router.push({
+                    pathname: "/transaction/add",
+                    params: { id: tx.id },
+                  } as any)
+                }
                 onDelete={(id) => deleteTransaction(id)}
               />
             ))
           )}
           {filteredTransactions().length > 5 && (
             <TouchableOpacity
-              style={[styles.seeMoreBtn, { borderColor: colors.border, marginTop: Spacing.md }]}
-              onPress={() => router.push('/(tabs)/transactions')}
+              style={[
+                styles.seeMoreBtn,
+                { borderColor: colors.border, marginTop: Spacing.md },
+              ]}
+              onPress={() => router.push("/(tabs)/transactions")}
             >
-              <Text style={[styles.seeMoreText, { color: colors.textSecondary }]}>View All {filteredTransactions().length} Transactions</Text>
-              <Ionicons name="chevron-forward" size={14} color={colors.textSecondary} />
+              <Text
+                style={[styles.seeMoreText, { color: colors.textSecondary }]}
+              >
+                View All {filteredTransactions().length} Transactions
+              </Text>
+              <Ionicons
+                name="chevron-forward"
+                size={14}
+                color={colors.textSecondary}
+              />
             </TouchableOpacity>
           )}
         </Animated.View>
@@ -407,49 +903,95 @@ function AIAdvisorSection({ insights, colors, isDark }: any) {
   const mainInsight = insights[0];
 
   return (
-    <View style={[styles.aiContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+    <View
+      style={[
+        styles.aiContainer,
+        { backgroundColor: colors.card, borderColor: colors.border },
+      ]}
+    >
+      {/* Left accent bar */}
+      <View style={[styles.aiAccentBar, { backgroundColor: colors.primary }]} />
+
       {!user?.isPremium && (
         <View style={styles.aiLockOverlay}>
-          <BlurView intensity={20} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
+          <BlurView
+            intensity={20}
+            tint={isDark ? "dark" : "light"}
+            style={StyleSheet.absoluteFill}
+          />
           <TouchableOpacity
             style={[styles.aiLockBtn, { backgroundColor: colors.primary }]}
-            onPress={() => router.push('/premium')}
+            onPress={() => router.push("/premium")}
           >
             <Ionicons name="lock-closed" size={14} color="#fff" />
             <Text style={styles.aiLockText}>Unlock with Premium</Text>
           </TouchableOpacity>
         </View>
       )}
-      {/* Header — no arrow, no lock icon */}
+      {/* Header */}
       <View style={[styles.aiHeader, !user?.isPremium && { opacity: 0.3 }]}>
-        <View style={[styles.aiIconBox, { backgroundColor: `${mainInsight.color}22` }]}>
+        <View
+          style={[
+            styles.aiIconBox,
+            { backgroundColor: `${mainInsight.color}22` },
+          ]}
+        >
           <Ionicons name="sparkles" size={18} color={mainInsight.color} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={[styles.aiLabel, { color: colors.textMuted }]}>AI SMART ADVISOR</Text>
-          <Text style={[styles.aiMainTitle, { color: colors.text }]}>{mainInsight.title}</Text>
+          <Text style={[styles.aiLabel, { color: colors.textMuted }]}>
+            AI SMART ADVISOR
+          </Text>
+          <Text style={[styles.aiMainTitle, { color: colors.text }]}>
+            {mainInsight.title}
+          </Text>
+        </View>
+        <View
+          style={[
+            styles.premiumBadge,
+            { backgroundColor: colors.primaryGlow, borderColor: colors.border },
+          ]}
+        >
+          <Ionicons name="star" size={10} color={colors.primary} />
+          <Text style={[styles.premiumBadgeText, { color: colors.primary }]}>
+            PRO
+          </Text>
         </View>
       </View>
 
-      <Text style={[styles.aiMainDesc, !user?.isPremium && { opacity: 0.3 }, { color: colors.textSecondary }]}>
+      <Text
+        style={[
+          styles.aiMainDesc,
+          !user?.isPremium && { opacity: 0.3 },
+          { color: colors.textSecondary },
+        ]}
+      >
         {mainInsight.description}
       </Text>
 
       {isExpanded && user?.isPremium && (
         <View style={styles.aiExpandedList}>
           {insights.slice(1).map((item: any, i: number) => (
-            <View key={i} style={[styles.aiSubRow, { borderTopColor: colors.border }]}>
+            <View
+              key={i}
+              style={[styles.aiSubRow, { borderTopColor: colors.border }]}
+            >
               <Ionicons name={item.icon} size={16} color={item.color} />
               <View style={{ flex: 1 }}>
-                <Text style={[styles.aiSubTitle, { color: colors.text }]}>{item.title}</Text>
-                <Text style={[styles.aiSubDesc, { color: colors.textSecondary }]}>{item.description}</Text>
+                <Text style={[styles.aiSubTitle, { color: colors.text }]}>
+                  {item.title}
+                </Text>
+                <Text
+                  style={[styles.aiSubDesc, { color: colors.textSecondary }]}
+                >
+                  {item.description}
+                </Text>
               </View>
             </View>
           ))}
         </View>
       )}
 
-      {/* Expand button at bottom — only for premium, clearly labeled */}
       {user?.isPremium && insights.length > 1 && (
         <TouchableOpacity
           style={[styles.aiExpandBtn, { borderTopColor: colors.border }]}
@@ -457,10 +999,12 @@ function AIAdvisorSection({ insights, colors, isDark }: any) {
           activeOpacity={0.7}
         >
           <Text style={[styles.aiExpandBtnText, { color: colors.primary }]}>
-            {isExpanded ? 'Show less' : `See ${insights.length - 1} more insights`}
+            {isExpanded
+              ? "Show less"
+              : `See ${insights.length - 1} more insights`}
           </Text>
           <Ionicons
-            name={isExpanded ? 'chevron-up' : 'chevron-down'}
+            name={isExpanded ? "chevron-up" : "chevron-down"}
             size={13}
             color={colors.primary}
           />
@@ -472,7 +1016,12 @@ function AIAdvisorSection({ insights, colors, isDark }: any) {
 
 function StatCard({ label, value, icon, gradient, colors, sub }: any) {
   return (
-    <LinearGradient colors={gradient} style={styles.statCard} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+    <LinearGradient
+      colors={gradient}
+      style={styles.statCard}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+    >
       <View style={styles.statIcon}>
         <Ionicons name={icon} size={18} color="#fff" />
       </View>
@@ -486,92 +1035,371 @@ function StatCard({ label, value, icon, gradient, colors, sub }: any) {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   scroll: { paddingHorizontal: Spacing.base },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.xl },
-  greeting: { fontSize: FontSize.sm, fontWeight: '500' },
-  userName: { fontSize: FontSize.xl, fontWeight: '800', marginTop: 2 },
-  headerRight: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  headerBtn: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, position: 'relative' },
-  notifDot: { position: 'absolute', top: -4, right: -4, minWidth: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
-  notifCount: { color: '#fff', fontSize: 10, fontWeight: '800' },
-  avatarCircle: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { color: '#fff', fontSize: FontSize.base, fontWeight: '800' },
+  header: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    marginBottom: Spacing.xl,
+  },
+  greetingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    marginBottom: 2,
+  },
+  greeting: { fontSize: FontSize.xs, fontWeight: "500" },
+  greetingDot: { fontSize: FontSize.xs, fontWeight: "700", opacity: 0.5 },
+  userName: { fontSize: FontSize.xxl, fontWeight: "800" },
+  dateLabel: { fontSize: FontSize.xs, fontWeight: "500", marginTop: 2 },
+  headerRight: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
+  headerBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    position: "relative",
+  },
+  notifDot: {
+    position: "absolute",
+    top: -4,
+    right: -4,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4,
+  },
+  notifCount: { color: "#fff", fontSize: 10, fontWeight: "800" },
+  avatarRing: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 2,
+  },
+  avatarCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarText: { color: "#fff", fontSize: FontSize.base, fontWeight: "800" },
   // Balance Card
-  balanceCard: { borderRadius: Radius.xxl, padding: Spacing.xl, overflow: 'hidden', ...Shadow.primary },
-  decorCircle1: { position: 'absolute', width: 200, height: 200, borderRadius: 100, top: -60, right: -40, backgroundColor: 'rgba(255,255,255,0.08)' },
-  decorCircle2: { position: 'absolute', width: 140, height: 140, borderRadius: 70, bottom: -30, left: 20, backgroundColor: 'rgba(255,255,255,0.05)' },
-  balanceLabelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 0 },
-  balanceLabel: { color: 'rgba(255,255,255,0.8)', fontSize: FontSize.sm, fontWeight: '600', letterSpacing: 0.5 },
-  balanceAmount: { color: '#fff', fontSize: 36, fontWeight: '800', marginVertical: 8, letterSpacing: -0.5 },
-  balanceSubtitle: { color: 'rgba(255,255,255,0.7)', fontSize: FontSize.xs, fontWeight: '500', marginBottom: Spacing.lg },
-  balanceStats: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: Radius.lg, padding: Spacing.md, gap: Spacing.base },
-  balanceStat: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  balanceStatIcon: { width: 28, height: 28, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.25)', alignItems: 'center', justifyContent: 'center' },
-  balanceStatLabel: { color: 'rgba(255,255,255,0.7)', fontSize: FontSize.xs, fontWeight: '500' },
-  balanceStatValue: { color: '#fff', fontSize: FontSize.base, fontWeight: '700' },
-  balanceDivider: { width: 1, height: 36, backgroundColor: 'rgba(255,255,255,0.2)' },
+  balanceCard: {
+    borderRadius: Radius.xxl,
+    padding: Spacing.lg,
+    overflow: "hidden",
+    ...Shadow.primary,
+  },
+  decorCircle1: {
+    position: "absolute",
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    top: -60,
+    right: -40,
+    backgroundColor: "rgba(255,255,255,0.08)",
+  },
+  decorCircle2: {
+    position: "absolute",
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    bottom: -30,
+    left: 20,
+    backgroundColor: "rgba(255,255,255,0.05)",
+  },
+  decorCircle3: {
+    position: "absolute",
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    top: 20,
+    left: -20,
+    backgroundColor: "rgba(255,255,255,0.04)",
+  },
+  balanceLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  balanceLabelLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  balanceDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "rgba(255,255,255,0.6)",
+  },
+  eyeBtn: { padding: 4 },
+  balanceLabel: {
+    color: "rgba(255,255,255,0.8)",
+    fontSize: FontSize.sm,
+    fontWeight: "600",
+    letterSpacing: 0.5,
+  },
+  balanceAmount: {
+    color: "#fff",
+    fontSize: 40,
+    fontWeight: "800",
+    marginVertical: 0,
+    letterSpacing: -1,
+  },
+  balanceSubtitle: {
+    color: "rgba(255,255,255,0.65)",
+    fontSize: FontSize.xs,
+    fontWeight: "500",
+    marginBottom: 2,
+  },
+  balanceStats: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.12)",
+    borderRadius: Radius.lg,
+    padding: Spacing.sm,
+  },
+  balanceStat: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+  },
+  balanceStatIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  balanceStatLabel: {
+    color: "rgba(255,255,255,0.65)",
+    fontSize: 9,
+    fontWeight: "600",
+    letterSpacing: 0.3,
+  },
+  balanceStatValue: {
+    color: "#fff",
+    fontSize: FontSize.sm,
+    fontWeight: "700",
+  },
+  balanceDivider: {
+    width: 1,
+    height: 36,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    marginHorizontal: 4,
+  },
   // Quick Stats
-  row: { flexDirection: 'row', gap: Spacing.md, marginBottom: Spacing.xl },
+  row: { flexDirection: "row", gap: Spacing.md, marginBottom: Spacing.xl },
   statCard: { flex: 1, borderRadius: Radius.xl, padding: Spacing.base, gap: 3 },
-  statIcon: { width: 34, height: 34, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
-  statValue: { color: '#fff', fontSize: FontSize.xl, fontWeight: '800' },
-  statLabel: { color: 'rgba(255,255,255,0.9)', fontSize: FontSize.sm, fontWeight: '600' },
-  statSub: { color: 'rgba(255,255,255,0.65)', fontSize: FontSize.xs },
+  statIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 4,
+  },
+  statValue: { color: "#fff", fontSize: FontSize.xl, fontWeight: "800" },
+  statLabel: {
+    color: "rgba(255,255,255,0.9)",
+    fontSize: FontSize.sm,
+    fontWeight: "600",
+  },
+  statSub: { color: "rgba(255,255,255,0.65)", fontSize: FontSize.xs },
   // Section
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md, marginTop: Spacing.lg },
-  sectionTitle: { fontSize: FontSize.lg, fontWeight: '700' },
-  seeAll: { fontSize: FontSize.sm, fontWeight: '600' },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: Spacing.md,
+    marginTop: Spacing.lg,
+  },
+  sectionTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  sectionTitle: { fontSize: FontSize.lg, fontWeight: "700" },
+  seeAll: { fontSize: FontSize.sm, fontWeight: "600" },
+  countBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    minWidth: 24,
+    alignItems: "center",
+  },
+  countBadgeText: { fontSize: 11, fontWeight: "700" },
   // Wallets
   walletsRow: { paddingBottom: Spacing.md, gap: Spacing.md },
-  walletCard: { width: 150, borderRadius: Radius.xl, padding: Spacing.base, gap: 4 },
-  walletIcon: { width: 34, height: 34, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.25)', alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
-  walletName: { color: '#fff', fontSize: FontSize.sm, fontWeight: '700' },
-  walletBalance: { color: '#fff', fontSize: FontSize.lg, fontWeight: '800' },
-  walletType: { color: 'rgba(255,255,255,0.65)', fontSize: FontSize.xs, fontWeight: '600', letterSpacing: 0.5 },
+  walletCard: {
+    width: 165,
+    borderRadius: Radius.xl,
+    padding: Spacing.base,
+    gap: 6,
+  },
+  walletTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 2,
+  },
+  walletIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: "rgba(255,255,255,0.25)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  walletTypePill: {
+    backgroundColor: "rgba(255,255,255,0.2)",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: Radius.full,
+  },
+  walletTypePillText: {
+    color: "rgba(255,255,255,0.9)",
+    fontSize: 9,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+  },
+  walletName: { color: "#fff", fontSize: FontSize.sm, fontWeight: "700" },
+  walletBalance: { color: "#fff", fontSize: FontSize.lg, fontWeight: "800" },
+  addWalletCard: {
+    width: 100,
+    borderRadius: Radius.xl,
+    padding: Spacing.base,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  addWalletIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  addWalletText: {
+    fontSize: FontSize.xs,
+    fontWeight: "600",
+    textAlign: "center",
+  },
   // Mini Goal Cards
-  miniGoalCard: { width: 120, borderRadius: Radius.lg, padding: Spacing.sm, borderWidth: 1, gap: 4 },
-  miniGoalIcon: { width: 30, height: 30, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  miniGoalName: { fontSize: 12, fontWeight: '700' },
-  miniGoalPct: { fontSize: 10, fontWeight: '800' },
-  miniGoalProgress: { height: 4, borderRadius: 2, overflow: 'hidden' },
-  miniGoalFill: { height: '100%', borderRadius: 2 },
-  emptyGoalCard: { width: 120, borderRadius: Radius.lg, padding: Spacing.sm, borderWidth: 1, alignItems: 'center', justifyContent: 'center', borderStyle: 'dashed', gap: 4 },
-  emptyGoalText: { fontSize: 10, fontWeight: '600' },
+  miniGoalCard: {
+    width: 145,
+    borderRadius: Radius.lg,
+    padding: Spacing.sm,
+    borderWidth: 1,
+    gap: 4,
+  },
+  miniGoalIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  miniGoalName: { fontSize: 12, fontWeight: "700" },
+  miniGoalPct: { fontSize: 10, fontWeight: "800" },
+  miniGoalProgress: { height: 5, borderRadius: 3, overflow: "hidden" },
+  miniGoalFill: { height: "100%", borderRadius: 3 },
+  miniGoalAmount: { fontSize: 9, fontWeight: "600" },
+  emptyGoalCard: {
+    width: 140,
+    borderRadius: Radius.lg,
+    padding: Spacing.sm,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    borderStyle: "dashed",
+    gap: 4,
+  },
+  emptyGoalText: { fontSize: 10, fontWeight: "600" },
   // Budget
   budgetList: { gap: Spacing.md },
   budgetCard: { borderRadius: Radius.xl, padding: Spacing.md, borderWidth: 1 },
-  budgetInfo: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, marginBottom: Spacing.sm },
-  budgetIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  budgetName: { fontSize: FontSize.base, fontWeight: '700' },
+  budgetInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.md,
+    marginBottom: Spacing.sm,
+  },
+  budgetIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  budgetName: { fontSize: FontSize.base, fontWeight: "700" },
   budgetSpent: { fontSize: FontSize.xs, marginTop: 1 },
-  budgetPct: { fontSize: FontSize.sm, fontWeight: '700' },
-  budgetProgressBg: { height: 6, borderRadius: 3, overflow: 'hidden' },
-  budgetProgressFill: { height: '100%', borderRadius: 3 },
-  emptyBudget: { padding: Spacing.xl, borderRadius: Radius.xl, borderWidth: 1, alignItems: 'center', gap: 6 },
-  emptyBudgetText: { fontSize: FontSize.sm, fontWeight: '500' },
-  emptyBudgetAction: { fontSize: FontSize.sm, fontWeight: '700' },
+  budgetRightCol: { alignItems: "flex-end", gap: 2 },
+  budgetPct: { fontSize: FontSize.sm, fontWeight: "700" },
+  budgetRemaining: { fontSize: 10, fontWeight: "600" },
+  budgetProgressBg: { height: 8, borderRadius: 4, overflow: "hidden" },
+  budgetProgressFill: { height: "100%", borderRadius: 4 },
+  emptyBudget: {
+    padding: Spacing.xl,
+    borderRadius: Radius.xl,
+    borderWidth: 1,
+    alignItems: "center",
+    gap: 6,
+  },
+  emptyBudgetText: { fontSize: FontSize.sm, fontWeight: "500" },
+  emptyBudgetAction: { fontSize: FontSize.sm, fontWeight: "700" },
   // Empty state
-  emptyState: { borderRadius: Radius.xl, padding: Spacing.xxl, alignItems: 'center', borderWidth: 1, gap: Spacing.sm },
-  emptyText: { fontSize: FontSize.base, fontWeight: '500' },
-  emptyAction: { fontSize: FontSize.base, fontWeight: '700' },
+  emptyState: {
+    borderRadius: Radius.xl,
+    padding: Spacing.xxl,
+    alignItems: "center",
+    borderWidth: 1,
+    gap: Spacing.sm,
+  },
+  emptyText: { fontSize: FontSize.base, fontWeight: "500" },
+  emptyAction: { fontSize: FontSize.base, fontWeight: "700" },
   // AI Advisor Styles
   aiContainer: {
     borderRadius: Radius.xl,
     padding: Spacing.md,
+    paddingLeft: Spacing.md + 3,
     borderWidth: 1,
     marginBottom: Spacing.xl,
-    position: 'relative',
-    overflow: 'hidden',
+    position: "relative",
+    overflow: "hidden",
     ...Shadow.sm,
+  },
+  aiAccentBar: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    borderTopLeftRadius: Radius.xl,
+    borderBottomLeftRadius: Radius.xl,
   },
   aiLockOverlay: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   aiLockBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -579,13 +1407,13 @@ const styles = StyleSheet.create({
     ...Shadow.sm,
   },
   aiLockText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   aiHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Spacing.md,
     marginBottom: 8,
   },
@@ -593,18 +1421,32 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   aiLabel: {
     fontSize: 9,
-    fontWeight: '800',
+    fontWeight: "800",
     letterSpacing: 1,
     marginBottom: 2,
   },
   aiMainTitle: {
     fontSize: FontSize.base,
-    fontWeight: '700',
+    fontWeight: "700",
+  },
+  premiumBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+  },
+  premiumBadgeText: {
+    fontSize: 9,
+    fontWeight: "800",
+    letterSpacing: 0.5,
   },
   aiMainDesc: {
     fontSize: 13,
@@ -616,14 +1458,14 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
   },
   aiSubRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Spacing.sm,
     paddingTop: Spacing.md,
     borderTopWidth: 1,
   },
   aiSubTitle: {
     fontSize: FontSize.sm,
-    fontWeight: '700',
+    fontWeight: "700",
     marginBottom: 2,
   },
   aiSubDesc: {
@@ -631,9 +1473,9 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   aiExpandBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 4,
     marginTop: Spacing.md,
     paddingTop: Spacing.md,
@@ -641,12 +1483,12 @@ const styles = StyleSheet.create({
   },
   aiExpandBtnText: {
     fontSize: FontSize.sm,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   seeMoreBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 12,
     borderWidth: 1,
     borderRadius: Radius.lg,
@@ -655,6 +1497,6 @@ const styles = StyleSheet.create({
   },
   seeMoreText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

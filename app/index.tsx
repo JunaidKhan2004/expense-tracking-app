@@ -26,6 +26,8 @@ export default function Index() {
   const { isHydrating } = useAppStore();
   const { colors, isDark } = useTheme();
   const [minTimeElapsed, setMinTimeElapsed] = useState(false);
+  const [forceRedirect, setForceRedirect] = useState(false);
+
 
   // Animation shared values
   const logoScale = useSharedValue(0.3);
@@ -52,7 +54,8 @@ export default function Index() {
     ));
 
     const timer = setTimeout(() => setMinTimeElapsed(true), 1800);
-    return () => clearTimeout(timer);
+    const forceTimer = setTimeout(() => setForceRedirect(true), 10000);
+    return () => { clearTimeout(timer); clearTimeout(forceTimer); };
   }, []);
 
   useEffect(() => {
@@ -70,8 +73,7 @@ export default function Index() {
     width: `${loadingProgress.value * 100}%` as any,
   }));
 
-  // Wait for both minimum animation time AND store hydration to complete
-  if (minTimeElapsed && !isHydrating) {
+  if ((minTimeElapsed && !isHydrating) || forceRedirect) {
     return isAuthenticated ? <Redirect href="/(tabs)" /> : <Redirect href="/(auth)/login" />;
   }
 

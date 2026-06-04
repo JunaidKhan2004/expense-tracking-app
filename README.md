@@ -1,102 +1,192 @@
-# 🚀 Spendly Expense Tracker
+# Spendly — Smart Expense Tracker
 
-Spendly is a modern, premium Expense Tracking application built with **React Native** and **Expo**. It features a stunning UI, smooth animations, and comprehensive financial management tools powered by **Supabase Cloud**.
-
----
-
-## ✨ Key Features
-
-- **Financial Goals (New!):** Set, track, and manage your savings targets. Features visual progress bars, goal-specific contributions, and a dedicated goal management dashboard.
-- **AI Smart Advisor:** Dashboard-integrated intelligence that analyzes your spending patterns (Spikes, Dining Alerts, Subscriptions) and provides actionable financial advice.
-- **OCR Receipt Scanner:** Premium camera-driven scanner that automatically detects amount, title, and category from your receipts using AI simulation (ready for API integration).
-- **Interactive Swipe Actions:** Effortlessly manage your finances with left-to-right swipe for **Editing** and right-to-left swipe for **Deletion** directly from any transaction list.
-- **Real-time Financial Sync:** Automatic wallet balance adjustments when adding, editing, or deleting transactions. Your net balance and category budgets stay perfectly in sync.
-- **Advanced Budgeting Engine:** Set category-wise monthly spending limits with real-time progress tracking and visual color alerts (Healthy vs. Over-budget) on the dashboard.
-- **Premium Auth Flow (New!):** A completely overhauled authentication experience featuring "Luxury Finance" aesthetics, floating 3D animations, glassmorphism logo containers, and smooth state transitions.
-- **Premium UI/UX:** A clean, professional interface featuring glassmorphism, linear gradients, dynamic profile stats, and smooth `Animated` transitions across all modules.
-- **Security & Privacy:** Dual-layer security with **Biometric Lock (FaceID/Fingerprint)** and **4-digit PIN fallback**.
-- **Data Export (Pro):** Generate professional **PDF Reports** with branding, or export raw data to **CSV** for detailed analysis.
-- **Smart Notifications Center:** Robust local notification system with budget threshold alerts and transaction confirmation (Optimized for SDK 53+).
+A production-grade personal finance app built with React Native and Expo. Track expenses, manage wallets, set budgets, and get AI-powered spending insights.
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
-- **Framework:** React Native (0.81.5) & Expo (~54.0)
-- **Backend:** **Supabase** (PostgreSQL, Auth, RLS)
-- **Security:** `expo-local-authentication` & `expo-secure-store`
-- **Gestures:** `react-native-gesture-handler` (Swipe Actions)
-- **State Management:** Zustand (with Persistence & Auto-migration)
-- **Styling:** NativeWind & Custom Emerald Design System
-- **Charts:** `react-native-svg` & `react-native-chart-kit`
-- **Icons:** `@expo-vector-icons` (Ionicons)
+| Layer | Technology |
+|-------|-----------|
+| Framework | React Native 0.81.5 + Expo SDK 54 |
+| Navigation | Expo Router 6 (file-based) |
+| State | Zustand 5 (8 stores + event bus) |
+| Backend | Supabase (PostgreSQL + Auth) |
+| Styling | NativeWind 4 (Tailwind CSS) + Reanimated 4 |
+| Security | expo-secure-store (chunked) + Biometric + PIN |
+| Build | EAS Build |
 
 ---
 
-## 📁 Project Structure
+## Features
 
-```text
-spendly/
-├── app/                    # Expo Router screens
-│   ├── (auth)/             # Professional Auth Flow (Google/Email)
-│   ├── (tabs)/             # Main app (Dashboard, History, Analytics, Settings)
-│   ├── budget/             # Budget management engine
-│   ├── settings/           # Security, PIN, & Privacy screens
-│   ├── transaction/        # Add/Edit/Detail transaction modals
-│   ├── notifications.tsx   # Notification history center
-│   └── _layout.tsx         # Root layout with GestureHandlerRootView
-├── components/             # Reusable UI, TransactionItems & Guards
-├── constants/              # Emerald Theme tokens & Categories
-├── store/                  # Zustand stores (Transactions, Wallets, Budgets)
-├── utils/                  # AI Engine, Export, Currency & Toast helpers
-└── types/                  # TypeScript definitions
+- **Dashboard** — Animated balance card, income/savings/expense breakdown, AI advisor
+- **Transactions** — Add, edit, delete with swipe gestures; OCR receipt scanner
+- **Wallets** — Multi-wallet support with real-time balance sync
+- **Budgets** — Per-category monthly budgets with progress tracking
+- **Savings Goals** — Create and track financial goals with contributions
+- **Analytics** — Charts and spending breakdowns by category and period
+- **AI Smart Advisor** — Spending spike detection, subscription alerts, saving suggestions (Premium)
+- **Multi-currency** — 14 currencies with live conversion
+- **Auth** — Email/password + Google OAuth (PKCE), OTP verification, biometric lock
+- **Themes** — Dark and light mode with Emerald design system
+- **Export** — PDF reports and CSV exports
+- **Notifications** — Budget alerts and transaction confirmations
+
+---
+
+## Project Structure
+
+```
+app/
+  (auth)/          # Login, signup, OTP, forgot/reset password
+  (tabs)/          # Dashboard, transactions, analytics, settings
+  transaction/     # Add/edit, OCR scan, detail view
+  budget/          # Budget management
+  wallet/          # Wallet management
+  goals/           # Savings goals
+  settings/        # Privacy, terms, support, PIN setup
+  premium.tsx      # Premium upgrade modal
+  notifications.tsx
+
+store/
+  useAuthStore.ts          # Auth, OAuth, session management
+  useTransactionStore.ts   # Transaction CRUD + category management
+  useWalletStore.ts        # Wallet CRUD + balance sync
+  useBudgetStore.ts        # Budget tracking with smart caching
+  useGoalStore.ts          # Savings goals
+  useSettingsStore.ts      # Theme, currency, security, notifications
+  useNotificationStore.ts  # Notification center
+  useAppStore.ts           # Global hydration flag
+  storeEvents.ts           # Typed event bus (cross-store communication)
+
+components/
+  auth/            # AuthGuard (biometric/PIN lock), AuthHeader
+  ui/              # Button, Input, Card, Badge, ProgressBar, Skeleton, OfflineBanner
+  transaction/     # TransactionItem (swipe actions)
+  goals/           # GoalCard
+
+utils/
+  ai.ts                # AI spending insights generator
+  formatters.ts        # Currency, date, stats formatters
+  retryWithBackoff.ts  # Exponential backoff (3 attempts, jitter)
+  currencyConverter.ts # Live currency conversion
+  notifications.ts     # Push notification setup
+  export.ts            # PDF/CSV export
+  toast.ts             # Toast message API
+
+lib/
+  supabase.ts      # Supabase client with chunked SecureStore adapter
+
+constants/
+  theme.ts         # Emerald design system (colors, spacing, radius, shadows)
+  categories.ts    # Default categories and supported currencies
+
+types/
+  index.ts         # Shared TypeScript definitions
 ```
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
-Make sure you have Node.js installed. You will also need the **Expo Go** app on your iOS/Android device.
 
-### Installation
+- Node.js 18+
+- Expo CLI: `npm install -g expo-cli`
+- EAS CLI: `npm install -g eas-cli`
 
-1. **Clone and Install:**
-   ```bash
-   cd spendly
-   npm install
-   ```
+### Install
 
-2. **Configure Supabase:**
-   - Update `lib/supabase.ts` with your credentials.
-   - For **Google Sign-In**, configure your Client IDs in Google Cloud Console.
-   - Run the SQL schema provided in the artifacts in your Supabase SQL Editor.
+```bash
+npm install
+```
 
-3. **Start Development:**
-   ```bash
-   npx expo start --clear
-   ```
+### Environment
 
----
+Create `.env.local` in the project root:
 
-## 📝 Features Roadmap
-- [x] Cloud Sync with Supabase
-- [x] Multi-Currency Support
-- [x] Category-wise Budgeting
-- [x] Biometric & PIN Security
-- [x] AI Spending Insights (Dashboard Integration)
-- [x] Swipe-to-Action (Edit/Delete)
-- [x] Real-time Balance Adjustment
-- [x] PDF/CSV Reports
-- [x] Google OAuth Integration
-- [x] Financial Goals (Savings Tracking)
-- [x] Luxury Finance UI (Auth Overhaul)
-- [x] Password Visibility (Eye Toggle)
-- [ ] Subscription & Bill Manager - *Planned*
-- [ ] Advanced AI Spending Forecast - *Under Development*
-- [ ] Cloud Backup (Auto-sync) - *Planned*
+```env
+EXPO_PUBLIC_SUPABASE_URL=your_supabase_project_url
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+### Run
+
+```bash
+# Start dev server (clear cache)
+npx expo start --clear
+
+# Android
+npx expo start --android
+
+# iOS
+npx expo start --ios
+```
 
 ---
 
-## 📝 License
-This project is open-source and available under the MIT License. Built with ❤️ by **Junaid Dev**.
+## Build (EAS)
+
+```bash
+# APK for testing (Android)
+eas build --profile preview --platform android
+
+# iOS build
+eas build --profile preview --platform ios
+
+# Both platforms
+eas build --profile preview --platform all
+
+# Production (Play Store / App Store)
+eas build --profile production --platform all
+```
+
+---
+
+## Architecture Notes
+
+### Cross-store Communication
+Stores communicate via a typed event bus (`storeEvents.ts`) instead of direct imports, preventing circular dependencies:
+
+```
+TransactionStore  →  emit('transaction:deleted')  →  WalletStore adjusts balance
+TransactionStore  →  emit('transaction:added')    →  NotificationStore creates alert
+```
+
+### Session Storage
+Expo SecureStore has a 2048-byte limit per key. Supabase sessions exceed this, so `lib/supabase.ts` implements a chunked adapter that splits large values across multiple keys and reassembles them on read.
+
+### Hydration Flow
+On app launch, `_layout.tsx` sets `isHydrating: true`, hydrates auth and settings, then sets `isHydrating: false`. The splash screen (`app/index.tsx`) waits for this flag before redirecting. An 8-second timeout ensures the app never gets stuck on splash.
+
+### Network Resilience
+All Supabase calls in stores use `retryWithBackoff` (3 attempts, exponential backoff + jitter). Auth actions use `Promise.race` with a 15-second timeout and always reset `isLoading` in a `finally` block — prevents iOS loading-stuck issues.
+
+### Budget Caching
+`useBudgetStore.getBudgetsWithProgress()` uses a module-level cache keyed on month + transaction count + budget amounts. Safe to call during render since it never triggers a re-render.
+
+---
+
+## Design System
+
+Primary color: **Emerald `#408A71`**
+
+| Token | Values |
+|-------|--------|
+| Spacing | xs(4) sm(8) md(12) base(16) lg(20) xl(24) xxl(32) |
+| Radius | sm(8) md(12) lg(16) xl(20) xxl(24) full(999) |
+| FontSize | xs(11) sm(12) md(14) base(16) lg(18) xl(20) xxl(24) display(36) |
+| Shadows | sm / md / lg / primary — all Emerald-tinted |
+
+---
+
+## App Info
+
+| Field | Value |
+|-------|-------|
+| App Name | Spendly |
+| Bundle ID | com.megajunaid.spendly |
+| Version | 1.0.0 |
+| Platforms | Android, iOS |
+| Owner | megajunaid |

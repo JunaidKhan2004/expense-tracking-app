@@ -1,4 +1,3 @@
-import 'react-native-url-polyfill/auto';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
@@ -37,7 +36,11 @@ export default function RootLayout() {
     const bootstrap = async () => {
       setIsHydrating(true);
       try {
-        await Promise.all([hydrateAuth(), hydrateSettings()]);
+        const timeout = new Promise<void>((resolve) => setTimeout(resolve, 8000));
+        await Promise.race([
+          Promise.all([hydrateAuth(), hydrateSettings()]),
+          timeout,
+        ]);
       } finally {
         setIsHydrating(false);
       }

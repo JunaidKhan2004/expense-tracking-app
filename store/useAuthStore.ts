@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
+import { Platform } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { retryWithBackoff } from '../utils/retryWithBackoff';
 import { User } from '../types';
@@ -114,10 +115,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   login: async (email, password) => {
     set({ isLoading: true, error: null });
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const loginTimeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Request timed out. Check your connection.')), 15000)
+      );
+
+      const { data, error } = await Promise.race([
+        supabase.auth.signInWithPassword({ email, password }),
+        loginTimeout,
+      ]);
 
       if (error) throw error;
 
@@ -129,24 +134,67 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           .single();
 
         if (profile) {
-          const userData: User = {
+          set({
+            user: {
+              id: data.user.id,
+              email: data.user.email!,
+              name: profile.name,
+              isPremium: profile.is_premium,
+              createdAt: profile.created_at,
+              currency: profile.currency,
+              streakDays: profile.streak_days,
+              totalBadges: profile.total_badges,
+            },
+            isAuthenticated: true,
+          });
+          return true;
+        }
+
+        // Auth succeeded but profile row missing — create it automatically
+        const name =
+          data.user.user_metadata?.full_name ||
+          data.user.user_metadata?.name ||
+          data.user.email?.split('@')[0] ||
+          'User';
+
+        const { data: newProfile } = await supabase
+          .from('profiles')
+          .insert([{
             id: data.user.id,
-            email: data.user.email!,
-            name: profile.name,
-            isPremium: profile.is_premium,
-            createdAt: profile.created_at,
-            currency: profile.currency,
-            streakDays: profile.streak_days,
-            totalBadges: profile.total_badges,
-          };
-          set({ user: userData, isAuthenticated: true, isLoading: false });
+            name,
+            email: data.user.email,
+            currency: 'USD',
+            is_premium: false,
+            streak_days: 0,
+            total_badges: 0,
+          }])
+          .select()
+          .single();
+
+        if (newProfile) {
+          set({
+            user: {
+              id: data.user.id,
+              email: data.user.email!,
+              name: newProfile.name,
+              isPremium: false,
+              createdAt: newProfile.created_at,
+              currency: 'USD',
+              streakDays: 0,
+              totalBadges: 0,
+            },
+            isAuthenticated: true,
+          });
           return true;
         }
       }
+
       return false;
     } catch (err: any) {
-      set({ error: err.message || 'Login failed', isLoading: false });
+      set({ error: err.message || 'Login failed' });
       return false;
+    } finally {
+      set({ isLoading: false });
     }
   },
 
@@ -170,10 +218,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (error) throw error;
       if (!data.url) throw new Error('No OAuth URL returned');
 
-      // Warm up Chrome Custom Tab on Android for faster, more reliable redirect detection
-      await WebBrowser.warmUpAsync();
+      // warmUpAsync is Android-only (Chrome Custom Tabs), safe to skip on iOS
+      if (Platform.OS === 'android') await WebBrowser.warmUpAsync();
       const res = await WebBrowser.openAuthSessionAsync(data.url, redirectUri);
-      await WebBrowser.coolDownAsync();
+      if (Platform.OS === 'android') await WebBrowser.coolDownAsync();
 
       if (res.type === 'success' && res.url) {
         // Supabase v2 defaults to PKCE flow: callback URL contains ?code=…
@@ -260,16 +308,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           }
         }
       } else if (res.type === 'cancel' || res.type === 'dismiss') {
-        // User closed the browser or browser dismissed without completing OAuth
-        set({ isLoading: false });
         return false;
       }
 
-      set({ isLoading: false });
       return false;
     } catch (err: any) {
-      set({ error: err.message || 'Google login failed', isLoading: false });
+      set({ error: err.message || 'Google login failed' });
       return false;
+    } finally {
+      set({ isLoading: false });
     }
   },
 
@@ -279,21 +326,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          data: { full_name: name },
-        },
+        options: { data: { full_name: name } },
       });
 
       if (error) throw error;
-
       if (data.user) {
-        set({ tempEmail: email, isLoading: false });
+        set({ tempEmail: email });
         return true;
       }
       return false;
     } catch (err: any) {
-      set({ error: err.message || 'Signup failed', isLoading: false });
+      set({ error: err.message || 'Signup failed' });
       return false;
+    } finally {
+      set({ isLoading: false });
     }
   },
 
@@ -316,28 +362,30 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           .single();
 
         if (profile) {
-          const userData: User = {
-            id: data.user.id,
-            email: data.user.email!,
-            name: profile.name,
-            isPremium: profile.is_premium,
-            createdAt: profile.created_at,
-            currency: profile.currency,
-            streakDays: profile.streak_days,
-            totalBadges: profile.total_badges,
-          };
-          set({ user: userData, isAuthenticated: true, isLoading: false, tempEmail: null });
+          set({
+            user: {
+              id: data.user.id,
+              email: data.user.email!,
+              name: profile.name,
+              isPremium: profile.is_premium,
+              createdAt: profile.created_at,
+              currency: profile.currency,
+              streakDays: profile.streak_days,
+              totalBadges: profile.total_badges,
+            },
+            isAuthenticated: true,
+            tempEmail: null,
+          });
         }
       } else if (type === 'recovery') {
-        // Mark that the user has a valid recovery session — only now can resetPassword be called
-        set({ isInRecoveryFlow: true, isLoading: false });
-      } else {
-        set({ isLoading: false });
+        set({ isInRecoveryFlow: true });
       }
       return true;
     } catch (err: any) {
-      set({ error: err.message || 'Verification failed', isLoading: false });
+      set({ error: err.message || 'Verification failed' });
       return false;
+    } finally {
+      set({ isLoading: false });
     }
   },
 
@@ -345,20 +393,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       if (type === 'signup') {
-        const { error } = await supabase.auth.resend({
-          type: 'signup',
-          email,
-        });
+        const { error } = await supabase.auth.resend({ type: 'signup', email });
         if (error) throw error;
       } else {
         const { error } = await supabase.auth.resetPasswordForEmail(email);
         if (error) throw error;
       }
-      set({ isLoading: false });
       return true;
     } catch (err: any) {
-      set({ error: err.message || 'Resend failed', isLoading: false });
+      set({ error: err.message || 'Resend failed' });
       return false;
+    } finally {
+      set({ isLoading: false });
     }
   },
 
@@ -369,31 +415,34 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         supabase.auth.resetPasswordForEmail(email)
       );
       if (error) throw error;
-      set({ tempEmail: email, isLoading: false });
+      set({ tempEmail: email });
       return true;
     } catch (err: any) {
-      set({ error: err?.message ?? 'Failed to send reset email', isLoading: false });
+      set({ error: err?.message ?? 'Failed to send reset email' });
       return false;
+    } finally {
+      set({ isLoading: false });
     }
   },
 
   resetPassword: async (password) => {
-    // Guard: only allow password reset after verifyOtp(type='recovery') has succeeded
     if (!get().isInRecoveryFlow) {
       set({ error: 'Password reset is not authorized. Please verify your identity first.' });
       return false;
     }
 
     set({ isLoading: true, error: null });
-    const { error } = await supabase.auth.updateUser({ password });
-    set({ isLoading: false });
-    if (error) {
-      set({ error: error.message });
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+      set({ isInRecoveryFlow: false, tempEmail: null });
+      return true;
+    } catch (err: any) {
+      set({ error: err.message || 'Password reset failed' });
       return false;
+    } finally {
+      set({ isLoading: false });
     }
-    // Clear recovery flag after successful reset
-    set({ isInRecoveryFlow: false, tempEmail: null });
-    return true;
   },
 
   logout: async () => {

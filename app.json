@@ -10,12 +10,19 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.megajunaid.spendly"
+      "bundleIdentifier": "com.megajunaid.spendly",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Spendly uses Face ID to securely unlock your account.",
+        "NSCameraUsageDescription": "Spendly uses the camera to scan receipts.",
+        "NSPhotoLibraryUsageDescription": "Spendly needs access to your photos to attach receipts.",
+        "NSLocalNetworkUsageDescription": "Spendly uses local network for development only."
+      }
     },
     "android": {
+      "icon": "./assets/images/AppLogo.png",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/AppLogo.png",
-        "backgroundImage": "./assets/images/AndroidBackground.png"
+        "foregroundImage": "./assets/images/AdaptiveForeground.png",
+        "backgroundColor": "#408A71"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
@@ -27,6 +34,18 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Spendly uses Face ID to securely unlock your account."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Spendly uses the camera to scan receipts."
+        }
+      ],
       [
         "expo-splash-screen",
         {
