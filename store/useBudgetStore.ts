@@ -158,20 +158,19 @@ export const useBudgetStore = create<BudgetState>((set, get) => ({
     const start = startOfMonth(now);
     const end = endOfMonth(now);
 
-    const result = budgets.map((budget) => {
-      const spent = transactions
-        .filter(
-          (t) =>
-            t.type === 'expense' &&
-            t.categoryId === budget.categoryId &&
-            parseISO(t.date) >= start &&
-            parseISO(t.date) <= end
-        )
-        .reduce((sum, t) => sum + t.amount, 0);
+    // Single pass over transactions — O(m) instead of O(n*m)
+    const spentByCategory = new Map<string, number>();
+    for (const t of transactions) {
+      if (t.type !== 'expense') continue;
+      const d = parseISO(t.date);
+      if (d < start || d > end) continue;
+      spentByCategory.set(t.categoryId, (spentByCategory.get(t.categoryId) ?? 0) + t.amount);
+    }
 
+    const result = budgets.map((budget) => {
+      const spent = spentByCategory.get(budget.categoryId) ?? 0;
       const remaining = Math.max(budget.amount - spent, 0);
       const percentage = budget.amount > 0 ? (spent / budget.amount) * 100 : 0;
-
       return { ...budget, spent, remaining, percentage };
     });
 

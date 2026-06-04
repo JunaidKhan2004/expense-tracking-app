@@ -1,21 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
 import { useTheme } from '../../../hooks/useTheme';
-import { useSettingsStore } from '../../../store/useSettingsStore';
+import { PIN_SECURE_KEY, useSettingsStore } from '../../../store/useSettingsStore';
 import { FontSize, Radius, Spacing } from '../../../constants/theme';
 import { showToast } from '../../../utils/toast';
 
 export default function ChangePinScreen() {
   const { colors } = useTheme();
   const { settings, setPin } = useSettingsStore();
-  const [step, setStep] = useState<'current' | 'new' | 'confirm'>(settings.pin ? 'current' : 'new');
+  const [step, setStep] = useState<'current' | 'new' | 'confirm'>(settings.pinEnabled ? 'current' : 'new');
   const [pin, setPinInput] = useState('');
   const [newPin, setNewPin] = useState('');
-  const [confirmPin, setConfirmPin] = useState('');
-  
-  const shakeAnim = React.useRef(new Animated.Value(0)).current;
+  const [attempts, setAttempts] = useState(0);
+  const [isLocked, setIsLocked] = useState(false);
+  const lockoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const shakeAnim = useRef(new Animated.Value(0)).current;
 
   const shake = () => {
     Animated.sequence([
@@ -27,29 +30,46 @@ export default function ChangePinScreen() {
   };
 
   const handlePress = (num: string) => {
-    if (pin.length < 4) {
-      const nextPin = pin + num;
-      setPinInput(nextPin);
-
-      if (nextPin.length === 4) {
-        setTimeout(() => processPin(nextPin), 200);
-      }
+    if (isLocked || pin.length >= 4) return;
+    const nextPin = pin + num;
+    setPinInput(nextPin);
+    if (nextPin.length === 4) {
+      setTimeout(() => processPin(nextPin), 200);
     }
   };
 
   const handleDelete = () => {
-    setPinInput(pin.slice(0, -1));
+    if (!isLocked) setPinInput(pin.slice(0, -1));
   };
 
   const processPin = async (enteredPin: string) => {
     if (step === 'current') {
-      if (enteredPin === settings.pin) {
-        setStep('new');
+      try {
+        const storedPin = await SecureStore.getItemAsync(PIN_SECURE_KEY);
+        if (enteredPin === storedPin) {
+          setAttempts(0);
+          setStep('new');
+          setPinInput('');
+        } else {
+          const next = attempts + 1;
+          setAttempts(next);
+          if (next >= 3) {
+            setIsLocked(true);
+            lockoutRef.current = setTimeout(() => {
+              setIsLocked(false);
+              setAttempts(0);
+            }, 60_000);
+            setPinInput('');
+            showToast.error('Too Many Attempts', 'Try again in 1 minute');
+          } else {
+            shake();
+            setPinInput('');
+            showToast.error('Incorrect PIN', `${3 - next} attempt${3 - next !== 1 ? 's' : ''} remaining`);
+          }
+        }
+      } catch {
         setPinInput('');
-      } else {
-        shake();
-        setPinInput('');
-        showToast.error('Incorrect PIN', 'Please try again');
+        showToast.error('Error', 'Failed to verify PIN');
       }
     } else if (step === 'new') {
       setNewPin(enteredPin);
@@ -58,6 +78,7 @@ export default function ChangePinScreen() {
     } else if (step === 'confirm') {
       if (enteredPin === newPin) {
         await setPin(enteredPin);
+        if (lockoutRef.current) clearTimeout(lockoutRef.current);
         showToast.success('PIN Updated', 'Your security PIN has been saved');
         if (router.canGoBack()) {
           router.back();

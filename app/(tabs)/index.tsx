@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
+import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect, useMemo, useRef } from 'react';
@@ -37,6 +38,7 @@ export default function DashboardScreen() {
   const { goals, hydrate: hydrateGoals } = useGoalStore();
   const { unreadCount } = useNotificationStore();
   const [refreshing, setRefreshing] = React.useState(false);
+  const [isBalanceHidden, setIsBalanceHidden] = React.useState(false);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
@@ -106,7 +108,10 @@ export default function DashboardScreen() {
           <View style={styles.headerRight}>
             <TouchableOpacity
               style={[styles.headerBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-              onPress={() => router.push('/notifications' as any)}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push('/notifications' as any);
+              }}
             >
               <Ionicons name="notifications-outline" size={22} color={colors.text} />
               {unreadCount > 0 && (
@@ -117,7 +122,10 @@ export default function DashboardScreen() {
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.avatarCircle, { backgroundColor: colors.primary }]}
-              onPress={() => router.push('/(tabs)/settings')}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push('/(tabs)/settings');
+              }}
             >
               <Text style={styles.avatarText}>{firstName.charAt(0).toUpperCase()}</Text>
             </TouchableOpacity>
@@ -131,9 +139,25 @@ export default function DashboardScreen() {
             <Animated.View style={[styles.decorCircle1, { transform: [{ scale: pulseScale }, { translateY: pulseTranslate }] }]} />
             <Animated.View style={[styles.decorCircle2, { transform: [{ scale: pulseScale }, { translateY: pulseTranslate }] }]} />
 
-            <Text style={styles.balanceLabel}>Total Balance</Text>
+            <View style={styles.balanceLabelRow}>
+              <Text style={styles.balanceLabel}>Total Balance</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setIsBalanceHidden(h => !h);
+                }}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons
+                  name={isBalanceHidden ? 'eye-off-outline' : 'eye-outline'}
+                  size={18}
+                  color="rgba(255,255,255,0.75)"
+                />
+              </TouchableOpacity>
+            </View>
+
             <Text style={styles.balanceAmount}>
-              {formatCurrencyFull(totalBalance(), settings.currency)}
+              {isBalanceHidden ? '••••••' : formatCurrencyFull(totalBalance(), settings.currency)}
             </Text>
             <Text style={styles.balanceSubtitle}>Across {wallets.length} account{wallets.length !== 1 ? 's' : ''}</Text>
 
@@ -144,7 +168,9 @@ export default function DashboardScreen() {
                 </View>
                 <View>
                   <Text style={styles.balanceStatLabel}>Income</Text>
-                  <Text style={styles.balanceStatValue}>{formatCurrency(income, settings.currency)}</Text>
+                  <Text style={styles.balanceStatValue}>
+                    {isBalanceHidden ? '••••' : formatCurrency(income, settings.currency)}
+                  </Text>
                 </View>
               </View>
               <View style={[styles.balanceDivider]} />
@@ -154,7 +180,9 @@ export default function DashboardScreen() {
                 </View>
                 <View>
                   <Text style={styles.balanceStatLabel}>Expenses</Text>
-                  <Text style={styles.balanceStatValue}>{formatCurrency(expenses, settings.currency)}</Text>
+                  <Text style={styles.balanceStatValue}>
+                    {isBalanceHidden ? '••••' : formatCurrency(expenses, settings.currency)}
+                  </Text>
                 </View>
               </View>
             </View>
@@ -340,7 +368,7 @@ export default function DashboardScreen() {
             <View style={[styles.emptyState, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Ionicons name="receipt-outline" size={40} color={colors.textMuted} />
               <Text style={[styles.emptyText, { color: colors.textMuted }]}>No transactions yet</Text>
-              <TouchableOpacity onPress={() => router.push('/transaction/add')}>
+              <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/transaction/add'); }}>
                 <Text style={[styles.emptyAction, { color: colors.primary }]}>Add your first one</Text>
               </TouchableOpacity>
             </View>
@@ -392,11 +420,8 @@ function AIAdvisorSection({ insights, colors, isDark }: any) {
           </TouchableOpacity>
         </View>
       )}
-      <TouchableOpacity
-        style={[styles.aiHeader, !user?.isPremium && { opacity: 0.3 }]}
-        onPress={() => user?.isPremium ? setIsExpanded(!isExpanded) : router.push('/premium')}
-        activeOpacity={0.7}
-      >
+      {/* Header — no arrow, no lock icon */}
+      <View style={[styles.aiHeader, !user?.isPremium && { opacity: 0.3 }]}>
         <View style={[styles.aiIconBox, { backgroundColor: `${mainInsight.color}22` }]}>
           <Ionicons name="sparkles" size={18} color={mainInsight.color} />
         </View>
@@ -404,22 +429,13 @@ function AIAdvisorSection({ insights, colors, isDark }: any) {
           <Text style={[styles.aiLabel, { color: colors.textMuted }]}>AI SMART ADVISOR</Text>
           <Text style={[styles.aiMainTitle, { color: colors.text }]}>{mainInsight.title}</Text>
         </View>
-        {user?.isPremium ? (
-          <Ionicons
-            name={isExpanded ? "chevron-up" : "chevron-down"}
-            size={18}
-            color={colors.textMuted}
-          />
-        ) : (
-          <Ionicons name="lock-closed" size={16} color={colors.textMuted} />
-        )}
-      </TouchableOpacity>
+      </View>
 
-      <Text style={[styles.aiMainDesc, { color: colors.textSecondary }]}>
+      <Text style={[styles.aiMainDesc, !user?.isPremium && { opacity: 0.3 }, { color: colors.textSecondary }]}>
         {mainInsight.description}
       </Text>
 
-      {isExpanded && (
+      {isExpanded && user?.isPremium && (
         <View style={styles.aiExpandedList}>
           {insights.slice(1).map((item: any, i: number) => (
             <View key={i} style={[styles.aiSubRow, { borderTopColor: colors.border }]}>
@@ -430,15 +446,25 @@ function AIAdvisorSection({ insights, colors, isDark }: any) {
               </View>
             </View>
           ))}
-          {!user?.isPremium && (
-            <TouchableOpacity
-              style={[styles.aiProBtn, { backgroundColor: colors.primaryGlow }]}
-              onPress={() => router.push('/premium')}
-            >
-              <Text style={[styles.aiProBtnText, { color: colors.primary }]}>Unlock Full AI Analysis</Text>
-            </TouchableOpacity>
-          )}
         </View>
+      )}
+
+      {/* Expand button at bottom — only for premium, clearly labeled */}
+      {user?.isPremium && insights.length > 1 && (
+        <TouchableOpacity
+          style={[styles.aiExpandBtn, { borderTopColor: colors.border }]}
+          onPress={() => setIsExpanded(!isExpanded)}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.aiExpandBtnText, { color: colors.primary }]}>
+            {isExpanded ? 'Show less' : `See ${insights.length - 1} more insights`}
+          </Text>
+          <Ionicons
+            name={isExpanded ? 'chevron-up' : 'chevron-down'}
+            size={13}
+            color={colors.primary}
+          />
+        </TouchableOpacity>
       )}
     </View>
   );
@@ -473,6 +499,7 @@ const styles = StyleSheet.create({
   balanceCard: { borderRadius: Radius.xxl, padding: Spacing.xl, overflow: 'hidden', ...Shadow.primary },
   decorCircle1: { position: 'absolute', width: 200, height: 200, borderRadius: 100, top: -60, right: -40, backgroundColor: 'rgba(255,255,255,0.08)' },
   decorCircle2: { position: 'absolute', width: 140, height: 140, borderRadius: 70, bottom: -30, left: 20, backgroundColor: 'rgba(255,255,255,0.05)' },
+  balanceLabelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 0 },
   balanceLabel: { color: 'rgba(255,255,255,0.8)', fontSize: FontSize.sm, fontWeight: '600', letterSpacing: 0.5 },
   balanceAmount: { color: '#fff', fontSize: 36, fontWeight: '800', marginVertical: 8, letterSpacing: -0.5 },
   balanceSubtitle: { color: 'rgba(255,255,255,0.7)', fontSize: FontSize.xs, fontWeight: '500', marginBottom: Spacing.lg },
@@ -603,14 +630,16 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 16,
   },
-  aiProBtn: {
-    marginTop: Spacing.sm,
-    height: 44,
-    borderRadius: Radius.lg,
+  aiExpandBtn: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 4,
+    marginTop: Spacing.md,
+    paddingTop: Spacing.md,
+    borderTopWidth: 1,
   },
-  aiProBtnText: {
+  aiExpandBtnText: {
     fontSize: FontSize.sm,
     fontWeight: '700',
   },

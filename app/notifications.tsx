@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
+import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect, useRef } from 'react';
@@ -22,6 +23,19 @@ export default function NotificationsScreen() {
     }
   };
 
+  const handleNotificationPress = (item: NotificationItem) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    markAsRead(item.id);
+    // Navigate to the relevant screen based on notification type
+    if (item.type === 'transaction') {
+      router.back();
+      router.push('/(tabs)/transactions' as any);
+    } else if (item.type === 'budget') {
+      router.back();
+      router.push('/budget/manage' as any);
+    }
+  };
+
   const renderItem = ({ item }: { item: NotificationItem }) => {
     const icon = getIcon(item.type);
 
@@ -37,7 +51,7 @@ export default function NotificationsScreen() {
             shadowColor: item.isRead ? '#000' : colors.primary,
           }
         ]}
-        onPress={() => markAsRead(item.id)}
+        onPress={() => handleNotificationPress(item)}
       >
         <View style={[styles.iconBox, { backgroundColor: `${icon.color}15` }]}>
           <Ionicons name={icon.name as any} size={20} color={icon.color} />
@@ -81,13 +95,13 @@ export default function NotificationsScreen() {
               <Ionicons name="chevron-back" size={24} color={colors.text} />
             </TouchableOpacity>
             <Text style={[styles.title, { color: colors.text }]}>Notifications</Text>
-            <TouchableOpacity onPress={clearNotifications}>
+            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); clearNotifications(); }}>
               <Text style={{ color: colors.danger, fontWeight: '600' }}>Clear All</Text>
             </TouchableOpacity>
           </View>
 
           {notifications.length > 0 && (
-            <TouchableOpacity style={styles.markAll} onPress={markAllAsRead}>
+            <TouchableOpacity style={styles.markAll} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); markAllAsRead(); }}>
               <Ionicons name="checkmark-done" size={16} color={colors.primary} />
               <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 12 }}>Mark all as read</Text>
             </TouchableOpacity>

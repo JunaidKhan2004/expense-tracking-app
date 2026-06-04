@@ -1,20 +1,36 @@
-import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Redirect, router, Tabs } from 'expo-router';
-import React, { useEffect } from 'react';
-import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
+import { LinearGradient } from "expo-linear-gradient";
+import { Redirect, router, Tabs } from "expo-router";
+import React, { useEffect } from "react";
+import {
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import Animated, {
   interpolate,
   useAnimatedStyle,
   useSharedValue,
-  withSpring
-} from 'react-native-reanimated';
-import { Shadow } from '../../constants/theme';
-import { useTheme } from '../../hooks/useTheme';
-import { useAuthStore } from '../../store/useAuthStore';
+  withSpring,
+} from "react-native-reanimated";
+import { Shadow } from "../../constants/theme";
+import { useTheme } from "../../hooks/useTheme";
+import { useAuthStore } from "../../store/useAuthStore";
 
-function TabBarIcon({ name, focused, color, label }: { name: string, focused: boolean, color: string, label: string }) {
+function TabBarIcon({
+  name,
+  focused,
+  color,
+  label,
+}: {
+  name: string;
+  focused: boolean;
+  color: string;
+  label: string;
+}) {
   const { colors } = useTheme();
   const transition = useSharedValue(focused ? 1 : 0);
 
@@ -25,7 +41,7 @@ function TabBarIcon({ name, focused, color, label }: { name: string, focused: bo
   const iconStyle = useAnimatedStyle(() => ({
     transform: [
       { scale: interpolate(transition.value, [0, 1], [1, 1.1]) },
-      { translateY: interpolate(transition.value, [0, 1], [0, -2]) }
+      { translateY: interpolate(transition.value, [0, 1], [0, -2]) },
     ],
   }));
 
@@ -45,7 +61,9 @@ function TabBarIcon({ name, focused, color, label }: { name: string, focused: bo
         />
       </Animated.View>
       <Animated.View style={[styles.labelWrapper, labelStyle]}>
-        <Text style={[styles.tabLabel, { color: colors.primary }]}>{label}</Text>
+        <Text style={[styles.tabLabel, { color: colors.primary }]}>
+          {label}
+        </Text>
       </Animated.View>
     </View>
   );
@@ -59,7 +77,7 @@ function FloatingAddButton() {
       <TouchableOpacity
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          router.push('/transaction/add');
+          router.push("/transaction/add");
         }}
         activeOpacity={0.8}
       >
@@ -94,13 +112,13 @@ export default function TabsLayout() {
         tabBarStyle: {
           backgroundColor: colors.card,
           borderTopWidth: 0,
-          height: Platform.OS === 'ios' ? 95 : 75,
-          paddingBottom: Platform.OS === 'ios' ? 35 : 15,
+          height: Platform.OS === "ios" ? 95 : 75,
+          paddingBottom: Platform.OS === "ios" ? 35 : 15,
           paddingTop: 12,
           ...Shadow.lg,
           borderTopLeftRadius: 30,
           borderTopRightRadius: 30,
-          position: 'absolute',
+          position: "absolute",
           bottom: 0,
           left: 0,
           right: 0,
@@ -110,32 +128,40 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          tabBarIcon: (props) => <TabBarIcon name="home" label="Home" {...props} />,
+          tabBarIcon: (props) => (
+            <TabBarIcon name="home" label="Home" {...props} />
+          ),
         }}
       />
       <Tabs.Screen
         name="transactions"
         options={{
-          tabBarIcon: (props) => <TabBarIcon name="receipt" label="History" {...props} />,
+          tabBarIcon: (props) => (
+            <TabBarIcon name="receipt" label="History" {...props} />
+          ),
         }}
       />
       <Tabs.Screen
         name="add"
         options={{
           tabBarIcon: () => <FloatingAddButton />,
-          tabBarStyle: { display: 'none' },
+          tabBarStyle: { display: "none" },
         }}
       />
       <Tabs.Screen
         name="analytics"
         options={{
-          tabBarIcon: (props) => <TabBarIcon name="stats-chart" label="Stats" {...props} />,
+          tabBarIcon: (props) => (
+            <TabBarIcon name="stats-chart" label="Stats" {...props} />
+          ),
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
-          tabBarIcon: (props) => <TabBarIcon name="person" label="Profile" {...props} />,
+          tabBarIcon: (props) => (
+            <TabBarIcon name="person" label="Profile" {...props} />
+          ),
         }}
       />
     </Tabs>
@@ -144,26 +170,26 @@ export default function TabsLayout() {
 
 const styles = StyleSheet.create({
   tabItem: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     minWidth: 60,
   },
   labelWrapper: {
-    overflow: 'hidden',
+    overflow: "hidden",
     marginTop: 4,
   },
   tabLabel: {
     fontSize: 10,
-    fontWeight: '800',
-    textTransform: 'uppercase',
+    fontWeight: "800",
+    // textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   fabContainer: {
     top: -25,
     height: 70,
     width: 70,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   fab: {
     width: 60,
@@ -179,8 +205,8 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 27,
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderColor: "rgba(255,255,255,0.2)",
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

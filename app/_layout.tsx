@@ -56,7 +56,18 @@ export default function RootLayout() {
             await hydrateAuth();
           }
         }
-        if (event === 'SIGNED_OUT') {
+        if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' && !session) {
+          useAuthStore.setState({
+            user: null,
+            isAuthenticated: false,
+            error: null,
+            isInRecoveryFlow: false,
+            tempEmail: null,
+          });
+        }
+        // Token refresh failed — invalid/expired session, force re-login
+        if ((event as string) === 'TOKEN_REFRESH_FAILED') {
+          await supabase.auth.signOut();
           useAuthStore.setState({
             user: null,
             isAuthenticated: false,
@@ -72,18 +83,27 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      // Hydrate user data after auth is confirmed. Settings already loaded above.
-      hydrateSettings().then(() => {
-        Promise.all([
+    if (!isAuthenticated) return;
+    let cancelled = false;
+
+    const hydrateAll = async () => {
+      try {
+        await hydrateSettings();
+        if (cancelled) return;
+        await Promise.all([
           hydrateTransactions(),
           hydrateWallets(),
           hydrateBudgets(),
           hydrateNotifications(),
           hydrateGoals(),
         ]);
-      });
-    }
+      } catch (err) {
+        console.error('Post-auth hydration failed:', err);
+      }
+    };
+
+    hydrateAll();
+    return () => { cancelled = true; };
   }, [isAuthenticated]);
 
   // Premium Toast Configuration

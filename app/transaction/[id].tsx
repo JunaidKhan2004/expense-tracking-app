@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import React from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { FontSize, Radius, Spacing } from '../../constants/theme';
@@ -48,6 +49,7 @@ export default function TransactionDetailScreen() {
   const amountColor = isIncome ? colors.success : colors.danger;
 
   const handleDelete = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     Alert.alert('Delete Transaction', 'Are you sure you want to delete this transaction?', [
       { text: 'Cancel', style: 'cancel' },
       {
@@ -61,6 +63,11 @@ export default function TransactionDetailScreen() {
     ]);
   };
 
+  const handleEdit = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push({ pathname: '/transaction/add', params: { id: transaction.id } } as any);
+  };
+
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <View style={[styles.handle, { backgroundColor: colors.border }]} />
@@ -71,8 +78,8 @@ export default function TransactionDetailScreen() {
             <Ionicons name="close" size={20} color={colors.text} />
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Transaction Detail</Text>
-          <TouchableOpacity onPress={handleDelete} style={[styles.backBtn, { backgroundColor: colors.dangerGlow, borderColor: colors.danger }]}>
-            <Ionicons name="trash-outline" size={20} color={colors.danger} />
+          <TouchableOpacity onPress={handleEdit} style={[styles.backBtn, { backgroundColor: colors.primaryGlow, borderColor: colors.primary }]}>
+            <Ionicons name="create-outline" size={20} color={colors.primary} />
           </TouchableOpacity>
         </View>
 
@@ -136,8 +143,10 @@ export default function TransactionDetailScreen() {
 function DetailRow({ icon, label, value, colors, last }: any) {
   return (
     <View style={[styles.detailRow, !last && { borderBottomWidth: 1, borderColor: colors.border }]}>
-      <Ionicons name={icon} size={18} color={colors.textMuted} />
-      <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>{label}</Text>
+      <View style={[styles.detailIconBox, { backgroundColor: colors.background }]}>
+        <Ionicons name={icon} size={16} color={colors.textMuted} />
+      </View>
+      <Text style={[styles.detailLabel, { color: colors.textMuted }]}>{label}</Text>
       <Text style={[styles.detailValue, { color: colors.text }]}>{value}</Text>
     </View>
   );
@@ -163,7 +172,8 @@ const styles = StyleSheet.create({
   heroChipText: { color: '#fff', fontSize: FontSize.xs, fontWeight: '700', letterSpacing: 0.5 },
   detailCard: { borderRadius: Radius.xl, borderWidth: 1, overflow: 'hidden', marginBottom: Spacing.md },
   detailRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, padding: Spacing.base },
-  detailLabel: { flex: 1, fontSize: FontSize.sm, fontWeight: '600' },
+  detailIconBox: { width: 30, height: 30, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  detailLabel: { flex: 1, fontSize: FontSize.xs, fontWeight: '600', letterSpacing: 0.2 },
   detailValue: { fontSize: FontSize.sm, fontWeight: '700' },
   notesCard: { borderRadius: Radius.xl, borderWidth: 1, padding: Spacing.base, marginBottom: Spacing.md },
   notesHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: Spacing.sm },

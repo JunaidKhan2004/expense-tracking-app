@@ -1,4 +1,5 @@
 import * as LocalAuthentication from 'expo-local-authentication';
+import * as SecureStore from 'expo-secure-store';
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import { retryWithBackoff } from '../utils/retryWithBackoff';
@@ -22,6 +23,8 @@ interface SettingsState {
   resetSettings: () => Promise<void>;
 }
 
+export const PIN_SECURE_KEY = 'spendly_pin';
+
 const DEFAULT_SETTINGS: AppSettings = {
   theme: 'dark',
   currency: 'USD',
@@ -29,7 +32,6 @@ const DEFAULT_SETTINGS: AppSettings = {
   notificationsEnabled: true,
   biometricEnabled: false,
   pinEnabled: false,
-  pin: undefined,
   budgetAlerts: true,
   weeklyReport: true,
   monthlyReport: true,
@@ -141,10 +143,14 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   },
 
   setPin: async (pin) => {
+    if (pin) {
+      await SecureStore.setItemAsync(PIN_SECURE_KEY, pin);
+    } else {
+      await SecureStore.deleteItemAsync(PIN_SECURE_KEY);
+    }
     const updated = {
       ...get().settings,
       pinEnabled: !!pin,
-      pin: pin || undefined,
     };
     set({ settings: updated });
     await Storage.setItem(Storage.KEYS.SETTINGS, updated);

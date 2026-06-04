@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import * as WebBrowser from 'expo-web-browser';
-import * as Linking from 'expo-linking';
+import * as AuthSession from 'expo-auth-session';
 import { supabase } from '../lib/supabase';
 import { retryWithBackoff } from '../utils/retryWithBackoff';
 import { User } from '../types';
@@ -94,7 +94,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           });
         }
       }
-    } catch (err) {
+    } catch (err: any) {
+      // Invalid/expired refresh token — wipe the broken session and go to login
+      if (
+        err?.message?.toLowerCase().includes('refresh token') ||
+        err?.message?.toLowerCase().includes('invalid token') ||
+        err?.status === 400 ||
+        err?.status === 401
+      ) {
+        await supabase.auth.signOut();
+        set({ user: null, isAuthenticated: false });
+      }
       console.error('Hydrate error:', err);
     } finally {
       set({ isLoading: false });
@@ -143,10 +153,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   signInWithGoogle: async () => {
     set({ isLoading: true, error: null });
     try {
-      // Linking.createURL without a forced scheme works in ALL environments:
-      // Expo Go → exp://192.x.x.x:8081
-      // EAS Dev build / Production → spendly://
-      const redirectUri = Linking.createURL('/');
+      // makeRedirectUri automatically picks the right URI per environment:
+      // Expo Go (Android/iOS) → exp://192.x.x.x:8081/
+      // Dev build / Production → spendly://
+      // This URI must be added to Supabase Dashboard → Auth → URL Config → Redirect URLs
+      const redirectUri = AuthSession.makeRedirectUri({ scheme: 'spendly' });
 
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -157,85 +168,101 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
 
       if (error) throw error;
+      if (!data.url) throw new Error('No OAuth URL returned');
 
+      // Warm up Chrome Custom Tab on Android for faster, more reliable redirect detection
+      await WebBrowser.warmUpAsync();
       const res = await WebBrowser.openAuthSessionAsync(data.url, redirectUri);
+      await WebBrowser.coolDownAsync();
 
       if (res.type === 'success' && res.url) {
-        // Supabase returns tokens in the URL hash (#) for implicit flow
-        const urlParts = res.url.split('#');
-        const hash = urlParts[1];
-        const query = res.url.split('?')[1];
-        const params = new URLSearchParams(hash || query || '');
+        // Supabase v2 defaults to PKCE flow: callback URL contains ?code=…
+        // Implicit flow (legacy) returns #access_token=… in the hash.
+        // Detect which flow was used and handle accordingly.
+        const hashPart = res.url.includes('#') ? res.url.split('#')[1] : '';
+        const queryPart = res.url.includes('?') ? res.url.split('?')[1].split('#')[0] : '';
+        const hashParams = new URLSearchParams(hashPart);
+        const queryParams = new URLSearchParams(queryPart);
 
-        const accessToken = params.get('access_token');
-        const refreshToken = params.get('refresh_token');
+        const code = queryParams.get('code');
+        const accessToken = hashParams.get('access_token') || queryParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token') || queryParams.get('refresh_token');
 
-        if (accessToken && refreshToken) {
+        let authUser: { id: string; email?: string; user_metadata?: Record<string, any> } | null = null;
+
+        if (code) {
+          // PKCE flow — exchange the one-time code for a session
+          const { data: sessionData, error: sessionError } = await supabase.auth.exchangeCodeForSession(res.url);
+          if (sessionError) throw sessionError;
+          authUser = sessionData.session?.user ?? null;
+        } else if (accessToken && refreshToken) {
+          // Implicit flow (older Supabase projects)
           const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken,
           });
-
           if (sessionError) throw sessionError;
+          authUser = sessionData.user ?? null;
+        } else {
+          set({ error: 'Google sign-in failed. Please try again.', isLoading: false });
+          return false;
+        }
 
-          if (sessionData.user) {
-            const authUser = sessionData.user;
+        if (authUser) {
+          // Try to get existing profile
+          let { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', authUser.id)
+            .single();
 
-            // Try to get existing profile
-            let { data: profile } = await supabase
+          // Google OAuth users may not have a profiles row yet — create one
+          if (!profile) {
+            const name =
+              authUser.user_metadata?.full_name ||
+              authUser.user_metadata?.name ||
+              authUser.email?.split('@')[0] ||
+              'User';
+
+            const { data: newProfile } = await supabase
               .from('profiles')
-              .select('*')
-              .eq('id', authUser.id)
+              .insert([{
+                id: authUser.id,
+                name,
+                email: authUser.email,
+                currency: 'USD',
+                is_premium: false,
+                streak_days: 0,
+                total_badges: 0,
+              }])
+              .select()
               .single();
 
-            // Google OAuth users may not have a profiles row yet — create one
-            if (!profile) {
-              const name =
-                authUser.user_metadata?.full_name ||
-                authUser.user_metadata?.name ||
-                authUser.email?.split('@')[0] ||
-                'User';
-
-              const { data: newProfile } = await supabase
-                .from('profiles')
-                .insert([{
-                  id: authUser.id,
-                  name,
-                  email: authUser.email,
-                  currency: 'USD',
-                  is_premium: false,
-                  streak_days: 0,
-                  total_badges: 0,
-                }])
-                .select()
-                .single();
-
-              profile = newProfile;
-            }
-
-            if (profile) {
-              set({
-                user: {
-                  id: authUser.id,
-                  email: authUser.email!,
-                  name: profile.name,
-                  isPremium: profile.is_premium,
-                  createdAt: profile.created_at,
-                  currency: profile.currency,
-                  streakDays: profile.streak_days,
-                  totalBadges: profile.total_badges,
-                },
-                isAuthenticated: true,
-                isLoading: false,
-              });
-              return true;
-            }
+            profile = newProfile;
           }
-        } else {
-          set({ error: 'Google sign-in failed. Please try again.' });
+
+          if (profile) {
+            set({
+              user: {
+                id: authUser.id,
+                email: authUser.email!,
+                name: profile.name,
+                isPremium: profile.is_premium,
+                createdAt: profile.created_at,
+                currency: profile.currency,
+                streakDays: profile.streak_days,
+                totalBadges: profile.total_badges,
+              },
+              isAuthenticated: true,
+              isLoading: false,
+            });
+            return true;
+          }
         }
-      } else if (res.type === 'cancel') {
-        // User closed browser — not an error
+      } else if (res.type === 'cancel' || res.type === 'dismiss') {
+        // User closed the browser or browser dismissed without completing OAuth
+        set({ isLoading: false });
+        return false;
       }
 
       set({ isLoading: false });
@@ -395,11 +422,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   purchasePremium: async () => {
     const current = get().user;
-    if (!current) return false;
+    if (!current) {
+      set({ error: 'You must be logged in to purchase premium.' });
+      return false;
+    }
+
+    if (current.isPremium) return true;
 
     set({ isLoading: true, error: null });
     try {
-      // In a real app, this would integrate with RevenueCat, Stripe, or Apple/Google IAP
+      // Requires Supabase RLS policy: allow users to set is_premium = true on their own row.
+      // SQL: CREATE POLICY "users can upgrade to premium" ON profiles
+      //   FOR UPDATE USING (auth.uid() = id)
+      //   WITH CHECK (auth.uid() = id AND is_premium = true);
       const { error } = await retryWithBackoff(() =>
         supabase.from('profiles').update({ is_premium: true }).eq('id', current.id)
       );
@@ -407,7 +442,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ user: { ...current, isPremium: true }, isLoading: false });
       return true;
     } catch (err: any) {
-      set({ error: err?.message ?? 'Premium purchase failed', isLoading: false });
+      const msg = err?.message ?? 'Premium purchase failed';
+      set({ error: msg, isLoading: false });
       console.error('Premium purchase error:', err);
       return false;
     }

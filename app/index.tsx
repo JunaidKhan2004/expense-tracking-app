@@ -84,10 +84,10 @@ export default function Index() {
       />
 
       <View style={styles.content}>
-        <Animated.View style={[styles.logoContainer, logoStyle,]}>
+        <Animated.View style={[styles.logoContainer, logoStyle]}>
           <Image
             source={require('../assets/images/AppLogo.png')}
-            style={{ width: 100, height: 100, resizeMode: 'contain' }}
+            style={styles.logoImage}
           />
         </Animated.View>
         {/* 
@@ -128,14 +128,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   logoContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 140,
+    height: 140,
+    borderRadius: 36,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
-    borderWidth: 1,
-    borderColor: 'rgba(64, 138, 113, 0.2)',
+    overflow: 'hidden',
+  },
+  logoImage: {
+    width: 140,
+    height: 140,
+    resizeMode: 'contain',
   },
   textContainer: {
     alignItems: 'center',

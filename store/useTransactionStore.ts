@@ -159,6 +159,7 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
       const msg = err?.message ?? 'Failed to add transaction';
       set({ error: msg });
       console.error('Add transaction error:', err);
+      throw err;
     }
   },
 
@@ -179,6 +180,7 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
       const msg = err?.message ?? 'Failed to update transaction';
       set({ error: msg });
       console.error('Update transaction error:', err);
+      throw err;
     }
   },
 
@@ -207,6 +209,7 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
       const msg = err?.message ?? 'Failed to delete transaction';
       set({ error: msg });
       console.error('Delete transaction error:', err);
+      throw err;
     }
   },
 
@@ -241,6 +244,7 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
       const msg = err?.message ?? 'Failed to add category';
       set({ error: msg });
       console.error('Add category error:', err);
+      throw err;
     }
   },
 
@@ -258,6 +262,7 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
       const msg = err?.message ?? 'Failed to delete category';
       set({ error: msg });
       console.error('Delete category error:', err);
+      throw err;
     }
   },
 

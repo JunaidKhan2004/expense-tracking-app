@@ -1,8 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useState } from 'react';
-import { Dimensions, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Svg, { G, Rect, Text as SvgText } from 'react-native-svg';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Animated,
+  Dimensions,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { FilterPills } from '../../components/ui/Badge';
 import { FontSize, Radius, Spacing } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
@@ -12,7 +19,6 @@ import { FilterPeriod } from '../../types';
 import { filterTransactionsByPeriod, formatCurrency, getCategoryStats, getMonthlyStats } from '../../utils/formatters';
 
 const { width } = Dimensions.get('window');
-const CHART_W = width - Spacing.base * 2;
 
 const PERIOD_OPTIONS = [
   { label: 'Week', value: 'week' },
@@ -21,122 +27,90 @@ const PERIOD_OPTIONS = [
   { label: 'All', value: 'all' },
 ];
 
-// ─── Pie Chart ────────────────────────────────────────────────────────────────
-function PieChart({ data, colors }: { data: { color: string; percentage: number; name: string; amount: number }[]; colors: any }) {
-  const size = 180;
-  const radius = 70;
-  const cx = size / 2;
-  const cy = size / 2;
-  let startAngle = -90;
+// ─── Animated Bar Chart ───────────────────────────────────────────────────────
+const BAR_H = 140;
 
-  const slices = data.slice(0, 6).map((item) => {
-    const angle = (item.percentage / 100) * 360;
-    const start = startAngle;
-    startAngle += angle;
-    return { ...item, startAngle: start, angle };
-  });
-
-  const polarToCartesian = (angle: number, r: number) => ({
-    x: cx + r * Math.cos((angle * Math.PI) / 180),
-    y: cy + r * Math.sin((angle * Math.PI) / 180),
-  });
-
-  const arcPath = (start: number, angle: number) => {
-    if (angle >= 360) {
-      return `M ${cx} ${cy - radius} A ${radius} ${radius} 0 1 1 ${cx - 0.01} ${cy - radius} Z`;
-    }
-    const end = start + angle;
-    const s = polarToCartesian(start, radius);
-    const e = polarToCartesian(end, radius);
-    const largeArc = angle > 180 ? 1 : 0;
-    return `M ${cx} ${cy} L ${s.x} ${s.y} A ${radius} ${radius} 0 ${largeArc} 1 ${e.x} ${e.y} Z`;
-  };
-
-  return (
-    <View style={pieStyles.container}>
-      <Svg width={size} height={size}>
-        <G>
-          {slices.map((slice, i) => (
-            <G key={i}>
-              <SvgText></SvgText>
-            </G>
-          ))}
-          {slices.map((slice, i) => {
-            const pathD = arcPath(slice.startAngle, slice.angle);
-            return (
-              <G key={i}>
-                <SvgText></SvgText>
-              </G>
-            );
-          })}
-        </G>
-        {/* Use simple colored circles as a legend proxy */}
-        {slices.map((slice, i) => {
-          const midAngle = slice.startAngle + slice.angle / 2;
-          const p = polarToCartesian(midAngle, radius);
-          return (
-            <G key={`arc-${i}`}>
-              <Rect
-                x={cx}
-                y={cy}
-                width={0}
-                height={0}
-                fill={slice.color}
-              />
-            </G>
-          );
-        })}
-      </Svg>
-    </View>
-  );
-}
-
-const pieStyles = StyleSheet.create({ container: { alignItems: 'center' } });
-
-// ─── Bar Chart ────────────────────────────────────────────────────────────────
-function BarChart({ data, colors }: { data: { month: string; income: number; expenses: number }[]; colors: any }) {
+function BarChart({ data, colors }: {
+  data: { month: string; income: number; expenses: number }[];
+  colors: any;
+}) {
   const maxVal = Math.max(...data.map((d) => Math.max(d.income, d.expenses)), 1);
-  const barHeight = 120;
+
+  // One Animated.Value per bar per type — recreated when data length changes via key prop
+  const anims = useRef(
+    data.map(() => ({ inc: new Animated.Value(0), exp: new Animated.Value(0) }))
+  ).current;
+
+  useEffect(() => {
+    anims.forEach((a) => { a.inc.setValue(0); a.exp.setValue(0); });
+    const animations = data.flatMap((item, i) => {
+      const a = anims[i];
+      if (!a) return [];
+      return [
+        Animated.timing(a.inc, {
+          toValue: Math.max((item.income / maxVal) * BAR_H, item.income > 0 ? 4 : 0),
+          duration: 550,
+          delay: i * 55,
+          useNativeDriver: false,
+        }),
+        Animated.timing(a.exp, {
+          toValue: Math.max((item.expenses / maxVal) * BAR_H, item.expenses > 0 ? 4 : 0),
+          duration: 550,
+          delay: i * 55 + 35,
+          useNativeDriver: false,
+        }),
+      ];
+    });
+    Animated.parallel(animations).start();
+  }, [data]);
 
   return (
     <View style={barStyles.container}>
-      {data.map((item, i) => (
-        <View key={i} style={barStyles.group}>
-          <View style={[barStyles.bars, { height: barHeight }]}>
-            <LinearGradient
-              colors={colors.gradient.income}
-              style={[barStyles.bar, { height: (item.income / maxVal) * barHeight }]}
-              start={{ x: 0, y: 1 }}
-              end={{ x: 0, y: 0 }}
-            />
-            <LinearGradient
-              colors={colors.gradient.expense}
-              style={[barStyles.bar, { height: (item.expenses / maxVal) * barHeight }]}
-              start={{ x: 0, y: 1 }}
-              end={{ x: 0, y: 0 }}
-            />
+      {data.map((item, i) => {
+        const a = anims[i] ?? { inc: new Animated.Value(0), exp: new Animated.Value(0) };
+        return (
+          <View key={i} style={barStyles.group}>
+            <View style={[barStyles.bars, { height: BAR_H }]}>
+              <Animated.View style={[barStyles.bar, { height: a.inc }]}>
+                <LinearGradient
+                  colors={colors.gradient.income}
+                  style={StyleSheet.absoluteFill}
+                  start={{ x: 0, y: 1 }}
+                  end={{ x: 0, y: 0 }}
+                />
+              </Animated.View>
+              <Animated.View style={[barStyles.bar, { height: a.exp }]}>
+                <LinearGradient
+                  colors={colors.gradient.expense}
+                  style={StyleSheet.absoluteFill}
+                  start={{ x: 0, y: 1 }}
+                  end={{ x: 0, y: 0 }}
+                />
+              </Animated.View>
+            </View>
+            <Text style={[barStyles.label, { color: colors.textMuted }]}>{item.month}</Text>
           </View>
-          <Text style={[barStyles.label, { color: colors.textMuted }]}>{item.month}</Text>
-        </View>
-      ))}
+        );
+      })}
     </View>
   );
 }
 
 const barStyles = StyleSheet.create({
-  container: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, paddingTop: 8 },
+  container: { flexDirection: 'row', alignItems: 'flex-end', gap: 6, paddingTop: 8, paddingBottom: 4 },
   group: { flex: 1, alignItems: 'center', gap: 6 },
   bars: { flexDirection: 'row', alignItems: 'flex-end', gap: 3, justifyContent: 'center' },
-  bar: { width: 10, borderRadius: 4 },
+  bar: { width: 11, borderTopLeftRadius: 5, borderTopRightRadius: 5, overflow: 'hidden', minHeight: 0 },
   label: { fontSize: 10, fontWeight: '600' },
 });
 
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 export default function AnalyticsScreen() {
   const { colors } = useTheme();
-  const { transactions, categories } = useTransactionStore();
+  const { transactions, categories, hydrate } = useTransactionStore();
   const { settings } = useSettingsStore();
   const [period, setPeriod] = useState<FilterPeriod>('month');
+  const [refreshing, setRefreshing] = useState(false);
 
   const filtered = filterTransactionsByPeriod(transactions, period);
   const catStats = getCategoryStats(filtered);
@@ -146,14 +120,42 @@ export default function AnalyticsScreen() {
   const expenses = filtered.filter((t) => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
   const savings = income - expenses;
 
-  const pieData = catStats.slice(0, 6).map((s) => {
-    const cat = categories.find((c) => c.id === s.categoryId);
-    return { color: cat?.color ?? colors.primary, percentage: s.percentage, name: cat?.name ?? 'Other', amount: s.amount };
-  });
+  // Previous month for trend arrows (always vs last calendar month)
+  const { prevIncome, prevExpenses } = useMemo(() => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const end = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+    const prev = transactions.filter((t) => {
+      const d = new Date(t.date);
+      return d >= start && d <= end;
+    });
+    return {
+      prevIncome: prev.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0),
+      prevExpenses: prev.filter((t) => t.type === 'expense').reduce((s, t) => s + t.amount, 0),
+    };
+  }, [transactions]);
+
+  const incomeTrend = prevIncome > 0 ? ((income - prevIncome) / prevIncome) * 100 : null;
+  const expenseTrend = prevExpenses > 0 ? ((expenses - prevExpenses) / prevExpenses) * 100 : null;
+  const savingsTrend = prevIncome > 0 || prevExpenses > 0
+    ? ((savings - (prevIncome - prevExpenses)) / Math.max(Math.abs(prevIncome - prevExpenses), 1)) * 100
+    : null;
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await hydrate();
+    setRefreshing(false);
+  };
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scroll}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+        }
+      >
         {/* Header */}
         <View style={styles.header}>
           <Text style={[styles.title, { color: colors.text }]}>Analytics</Text>
@@ -162,9 +164,30 @@ export default function AnalyticsScreen() {
 
         {/* Summary Cards */}
         <View style={styles.summaryRow}>
-          <SummaryCard label="Income" value={formatCurrency(income, settings.currency)} gradient={colors.gradient.income} icon="arrow-down-circle" />
-          <SummaryCard label="Expenses" value={formatCurrency(expenses, settings.currency)} gradient={colors.gradient.expense} icon="arrow-up-circle" />
-          <SummaryCard label="Savings" value={formatCurrency(savings, settings.currency)} gradient={savings >= 0 ? colors.gradient.card3 : colors.gradient.expense} icon="wallet" />
+          <SummaryCard
+            label="Income"
+            value={formatCurrency(income, settings.currency)}
+            gradient={colors.gradient.income}
+            icon="arrow-down-circle"
+            trend={period === 'month' ? incomeTrend : null}
+            trendPositiveIsGood
+          />
+          <SummaryCard
+            label="Expenses"
+            value={formatCurrency(expenses, settings.currency)}
+            gradient={colors.gradient.expense}
+            icon="arrow-up-circle"
+            trend={period === 'month' ? expenseTrend : null}
+            trendPositiveIsGood={false}
+          />
+          <SummaryCard
+            label="Savings"
+            value={formatCurrency(savings, settings.currency)}
+            gradient={savings >= 0 ? colors.gradient.card3 : colors.gradient.expense}
+            icon="wallet"
+            trend={period === 'month' ? savingsTrend : null}
+            trendPositiveIsGood
+          />
         </View>
 
         {/* Monthly Bar Chart */}
@@ -181,7 +204,7 @@ export default function AnalyticsScreen() {
             </View>
           </View>
           {monthlyStats.length > 0 ? (
-            <BarChart data={monthlyStats} colors={colors} />
+            <BarChart key={period} data={monthlyStats} colors={colors} />
           ) : (
             <View style={styles.noData}>
               <Ionicons name="bar-chart-outline" size={40} color={colors.textMuted} />
@@ -199,17 +222,20 @@ export default function AnalyticsScreen() {
               <Text style={[styles.noDataText, { color: colors.textMuted }]}>No expenses yet</Text>
             </View>
           ) : (
-            catStats.slice(0, 8).map((stat) => {
+            catStats.slice(0, 8).map((stat, idx) => {
               const cat = categories.find((c) => c.id === stat.categoryId);
               return (
-                <View key={stat.categoryId} style={styles.catRow}>
+                <View key={stat.categoryId} style={[styles.catRow, idx > 0 && { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: Spacing.md }]}>
                   <View style={[styles.catIcon, { backgroundColor: `${cat?.color ?? colors.primary}22` }]}>
                     <Ionicons name={(cat?.icon ?? 'ellipsis-horizontal-circle') as any} size={16} color={cat?.color ?? colors.primary} />
                   </View>
                   <View style={styles.catInfo}>
                     <View style={styles.catLabelRow}>
                       <Text style={[styles.catName, { color: colors.text }]}>{cat?.name ?? 'Other'}</Text>
-                      <Text style={[styles.catAmount, { color: colors.text }]}>{formatCurrency(stat.amount, settings.currency)}</Text>
+                      <View style={styles.catRight}>
+                        <Text style={[styles.catAmount, { color: colors.text }]}>{formatCurrency(stat.amount, settings.currency)}</Text>
+                        <Text style={[styles.catPct, { color: colors.textMuted }]}>{stat.percentage.toFixed(0)}%</Text>
+                      </View>
                     </View>
                     <View style={[styles.catBarBg, { backgroundColor: colors.border }]}>
                       <LinearGradient
@@ -219,7 +245,7 @@ export default function AnalyticsScreen() {
                         end={{ x: 1, y: 0 }}
                       />
                     </View>
-                    <Text style={[styles.catPct, { color: colors.textMuted }]}>{stat.percentage.toFixed(1)}% · {stat.count} transactions</Text>
+                    <Text style={[styles.catCount, { color: colors.textMuted }]}>{stat.count} transaction{stat.count !== 1 ? 's' : ''}</Text>
                   </View>
                 </View>
               );
@@ -248,12 +274,35 @@ export default function AnalyticsScreen() {
   );
 }
 
-function SummaryCard({ label, value, gradient, icon }: any) {
+// ─── Summary Card with trend arrow ───────────────────────────────────────────
+function SummaryCard({ label, value, gradient, icon, trend, trendPositiveIsGood }: {
+  label: string;
+  value: string;
+  gradient: string[];
+  icon: string;
+  trend: number | null;
+  trendPositiveIsGood: boolean;
+}) {
+  const isPositive = (trend ?? 0) >= 0;
+  const trendIsGood = trendPositiveIsGood ? isPositive : !isPositive;
+
   return (
     <LinearGradient colors={gradient} style={styles.summaryCard} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-      <Ionicons name={icon} size={18} color="#fff" style={{ marginBottom: 4 }} />
-      <Text style={styles.summaryValue}>{value}</Text>
+      <Ionicons name={icon as any} size={18} color="#fff" style={{ marginBottom: 6 }} />
+      <Text style={styles.summaryValue} numberOfLines={1} adjustsFontSizeToFit>{value}</Text>
       <Text style={styles.summaryLabel}>{label}</Text>
+      {trend !== null && (
+        <View style={styles.trendRow}>
+          <Ionicons
+            name={isPositive ? 'trending-up' : 'trending-down'}
+            size={11}
+            color={trendIsGood ? 'rgba(255,255,255,0.95)' : 'rgba(255,200,200,0.9)'}
+          />
+          <Text style={[styles.trendText, { color: trendIsGood ? 'rgba(255,255,255,0.9)' : 'rgba(255,200,200,0.9)' }]}>
+            {Math.abs(trend).toFixed(0)}% vs last mo
+          </Text>
+        </View>
+      )}
     </LinearGradient>
   );
 }
@@ -264,9 +313,11 @@ const styles = StyleSheet.create({
   header: { marginBottom: Spacing.xl, gap: Spacing.md },
   title: { fontSize: FontSize.xxl, fontWeight: '800' },
   summaryRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.xl },
-  summaryCard: { flex: 1, borderRadius: Radius.lg, padding: Spacing.md },
-  summaryValue: { color: '#fff', fontSize: FontSize.base, fontWeight: '800' },
-  summaryLabel: { color: 'rgba(255,255,255,0.75)', fontSize: FontSize.xs, fontWeight: '600' },
+  summaryCard: { flex: 1, borderRadius: Radius.lg, padding: Spacing.md, gap: 2 },
+  summaryValue: { color: '#fff', fontSize: FontSize.sm, fontWeight: '800' },
+  summaryLabel: { color: 'rgba(255,255,255,0.75)', fontSize: 10, fontWeight: '600' },
+  trendRow: { flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: 4 },
+  trendText: { fontSize: 9, fontWeight: '700' },
   card: { borderRadius: Radius.xl, padding: Spacing.base, borderWidth: 1, marginBottom: Spacing.xl },
   cardTitle: { fontSize: FontSize.base, fontWeight: '700', marginBottom: Spacing.md },
   chartLegend: { flexDirection: 'row', gap: Spacing.base, marginBottom: Spacing.sm },
@@ -278,12 +329,14 @@ const styles = StyleSheet.create({
   catRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md, marginBottom: Spacing.md },
   catIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginTop: 2 },
   catInfo: { flex: 1 },
-  catLabelRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
+  catLabelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+  catRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   catName: { fontSize: FontSize.sm, fontWeight: '600' },
   catAmount: { fontSize: FontSize.sm, fontWeight: '700' },
+  catPct: { fontSize: FontSize.xs, fontWeight: '600' },
   catBarBg: { height: 6, borderRadius: 3, marginBottom: 4, overflow: 'hidden' },
   catBarFill: { height: '100%', borderRadius: 3 },
-  catPct: { fontSize: FontSize.xs, fontWeight: '500' },
+  catCount: { fontSize: FontSize.xs, fontWeight: '500' },
   aiCard: { borderRadius: Radius.xl, padding: Spacing.base, marginBottom: Spacing.xl },
   aiHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: Spacing.sm },
   aiTitle: { color: '#fff', fontSize: FontSize.base, fontWeight: '700' },

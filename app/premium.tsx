@@ -26,12 +26,17 @@ function FeatureItem({ icon, title, description, colors }: any) {
 
 export default function PremiumScreen() {
   const { colors } = useTheme();
-  const { purchasePremium, isLoading, user } = useAuthStore();
+  const { purchasePremium, isLoading, error, user } = useAuthStore();
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handlePurchase = async () => {
-    if (user?.isPremium) {
-      showToast.info('Already Premium', 'You are already enjoying all premium features!');
+    if (!user) {
+      showToast.error('Not Logged In', 'Please sign in to continue.');
+      return;
+    }
+
+    if (user.isPremium) {
+      showToast.info('Already Premium', 'You already have all premium features!');
       return;
     }
 
@@ -40,14 +45,10 @@ export default function PremiumScreen() {
     setIsProcessing(false);
 
     if (success) {
-      showToast.success('Welcome to Premium!', 'All features have been unlocked for you.');
-      if (router.canGoBack()) {
-        router.back();
-      } else {
-        router.replace('/(tabs)/settings');
-      }
+      showToast.success('Welcome to Premium!', 'All features have been unlocked.');
+      router.canGoBack() ? router.back() : router.replace('/(tabs)/settings');
     } else {
-      showToast.error('Purchase Failed', 'Something went wrong. Please try again.');
+      showToast.error('Upgrade Failed', error ?? 'Something went wrong. Please try again.');
     }
   };
 
@@ -140,7 +141,7 @@ export default function PremiumScreen() {
             </LinearGradient>
           </TouchableOpacity>
           <Text style={[styles.secureText, { color: colors.textMuted }]}>
-            <Ionicons name="shield-checkmark" size={12} /> Secure transaction via App Store
+            <Ionicons name="shield-checkmark" size={12} /> Lifetime access · No recurring fees
           </Text>
         </View>
 

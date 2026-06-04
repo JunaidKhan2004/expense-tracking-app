@@ -119,7 +119,6 @@ export interface AppSettings {
   notificationsEnabled: boolean;
   biometricEnabled: boolean;
   pinEnabled: boolean;
-  pin?: string;
   budgetAlerts: boolean;
   weeklyReport: boolean;
   monthlyReport: boolean;

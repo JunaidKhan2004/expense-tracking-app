@@ -14,6 +14,7 @@ import { TransactionType, Transaction } from '../../types';
 import { Spacing, FontSize, Radius } from '../../constants/theme';
 import { showToast } from '../../utils/toast';
 import { useLocalSearchParams } from 'expo-router';
+import { CURRENCIES } from '../../constants/categories';
 
 export default function AddTransactionScreen() {
   const { colors } = useTheme();
@@ -195,7 +196,7 @@ export default function AddTransactionScreen() {
               <Text style={styles.amountLabel}>Amount</Text>
               <View style={styles.amountRow}>
                 <Text style={styles.currencySymbol}>
-                  {settings.currency === 'USD' ? '$' : settings.currency === 'EUR' ? '€' : settings.currency === 'PKR' ? '₨' : '$'}
+                  {CURRENCIES.find((c) => c.code === settings.currency)?.symbol ?? '$'}
                 </Text>
                 <TextInput
                   style={styles.amountInput}

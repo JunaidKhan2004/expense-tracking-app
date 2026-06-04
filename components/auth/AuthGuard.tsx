@@ -1,12 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as LocalAuthentication from 'expo-local-authentication';
+import * as SecureStore from 'expo-secure-store';
 import React, { useEffect, useState } from 'react';
 import { Animated, AppState, AppStateStatus, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { FontSize, Radius, Spacing } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuthStore } from '../../store/useAuthStore';
-import { useSettingsStore } from '../../store/useSettingsStore';
+import { PIN_SECURE_KEY, useSettingsStore } from '../../store/useSettingsStore';
 import { showToast } from '../../utils/toast';
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -51,19 +52,25 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const handlePinPress = (num: string) => {
+  const handlePinPress = async (num: string) => {
     if (pinInput.length < 4) {
       const nextPin = pinInput + num;
       setPinInput(nextPin);
       if (nextPin.length === 4) {
-        if (nextPin === settings.pin) {
-          setIsAuthenticated(true);
-          setShowPinFallback(false);
+        try {
+          const storedPin = await SecureStore.getItemAsync(PIN_SECURE_KEY);
+          if (nextPin === storedPin) {
+            setIsAuthenticated(true);
+            setShowPinFallback(false);
+            setPinInput('');
+          } else {
+            shake();
+            setPinInput('');
+            showToast.error('Invalid PIN', 'Please try again');
+          }
+        } catch {
           setPinInput('');
-        } else {
-          shake();
-          setPinInput('');
-          showToast.error('Invalid PIN', 'Please try again');
+          showToast.error('Error', 'Failed to verify PIN');
         }
       }
     }
